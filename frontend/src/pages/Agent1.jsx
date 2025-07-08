@@ -940,11 +940,21 @@ const Agent1 = () => {
   }
 
   const handleStartCollection = async () => {
+    console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS')
+    console.log('📋 Validando campos obrigatórios...')
+    
     if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
+      console.error('❌ ERRO: Campos obrigatórios não preenchidos')
+      console.log('Area:', searchConfig.area.trim())
+      console.log('Cargo:', searchConfig.cargo.trim()) 
+      console.log('Localização:', searchConfig.localizacao.trim())
       setError('Por favor, preencha todos os campos obrigatórios.')
       return
     }
 
+    console.log('✅ Campos validados com sucesso')
+    console.log('🔄 Configurando estado inicial...')
+    
     setIsProcessing(true)
     setError(null)
     setResults(null)
@@ -962,7 +972,19 @@ const Agent1 = () => {
         tipo_vaga: 'hibrido' // Adicionar tipo de vaga
       }
 
+      console.log('📦 Dados da requisição preparados:')
+      console.log(JSON.stringify(requestData, null, 2))
+      
+      console.log('🌐 Configuração de endpoints:')
+      console.log('API_URL:', config.API_URL)
+      console.log('Endpoint coleta:', config.endpoints.agent1.collectJobs)
+
       setCurrentStep(2)
+
+      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', config.endpoints.agent1.collectJobs)
+      console.log('📡 Método: POST')
+      console.log('📋 Headers: Content-Type: application/json')
+      console.log('⏰ Timestamp:', new Date().toISOString())
 
       // ETAPA 1: Coletar vagas
       // Primeiro tentar o endpoint real
@@ -974,8 +996,25 @@ const Agent1 = () => {
         body: JSON.stringify(requestData)
       })
       
+      console.log('📨 RESPOSTA RECEBIDA:')
+      console.log('Status:', response.status)
+      console.log('StatusText:', response.statusText)
+      console.log('OK:', response.ok)
+      console.log('Headers:', Object.fromEntries(response.headers.entries()))
+      
       // Se demorar muito ou falhar, sugerir modo demo
       if (!response.ok || response.status === 500) {
+        console.log('⚠️ PROBLEMA NA RESPOSTA:')
+        console.log('Response OK:', response.ok)
+        console.log('Status:', response.status)
+        
+        try {
+          const errorText = await response.text()
+          console.log('Conteúdo da resposta de erro:', errorText)
+        } catch (e) {
+          console.log('Não foi possível ler o conteúdo da resposta de erro')
+        }
+        
         const shouldUseDemo = window.confirm(
           'A coleta de vagas reais está demorando ou falhou.\n\n' +
           'Deseja usar o modo demonstração com vagas de exemplo?\n\n' +
@@ -983,7 +1022,8 @@ const Agent1 = () => {
         )
         
         if (shouldUseDemo) {
-          console.log('Mudando para modo DEMO...')
+          console.log('🎭 Mudando para modo DEMO...')
+          console.log('Endpoint DEMO:', config.endpoints.agent1.collectJobsDemo)
           response = await fetch(config.endpoints.agent1.collectJobsDemo, {
             method: 'POST',
             headers: {
@@ -991,16 +1031,38 @@ const Agent1 = () => {
             },
             body: JSON.stringify(requestData)
           })
+          
+          console.log('📨 RESPOSTA DEMO:')
+          console.log('Status:', response.status)
+          console.log('OK:', response.ok)
         }
       }
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro na coleta de vagas')
+        console.error('❌ ERRO FINAL NA RESPOSTA:')
+        console.log('Status:', response.status)
+        console.log('StatusText:', response.statusText)
+        
+        let errorMessage = 'Erro na coleta de vagas'
+        try {
+          const errorData = await response.json()
+          console.log('Dados de erro:', errorData)
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          console.log('Não foi possível fazer parse do JSON de erro')
+          const errorText = await response.text()
+          console.log('Texto da resposta de erro:', errorText)
+        }
+        
+        throw new Error(errorMessage)
       }
 
+      console.log('🎉 SUCESSO! Fazendo parse da resposta...')
       setCurrentStep(4)
       const collectionResult = await response.json()
+      
+      console.log('📊 RESULTADO DA COLETA:')
+      console.log(JSON.stringify(collectionResult, null, 2))
       
       // Salvar dados da coleta
       setCollectionData(collectionResult)
@@ -1015,7 +1077,12 @@ const Agent1 = () => {
       console.log(`✅ ${collectionResult.estatisticas.totalVagas} vagas coletadas!`)
       
     } catch (err) {
-      console.error('Erro na coleta:', err)
+      console.error('💥 ERRO CAPTURADO NO CATCH:')
+      console.error('Tipo do erro:', err.constructor.name)
+      console.error('Mensagem:', err.message)
+      console.error('Stack:', err.stack)
+      console.error('Erro completo:', err)
+      
       setError(err.message || 'Erro ao coletar vagas. Verifique se o backend está rodando.')
       setIsProcessing(false)
     }
@@ -1219,7 +1286,10 @@ const Agent1 = () => {
 
             <div className="text-center">
               <button
-                onClick={handleStartCollection}
+                onClick={() => {
+                  console.log('🔥 BOTÃO CLICADO! Chamando handleStartCollection...')
+                  handleStartCollection()
+                }}
                 disabled={!canStartCollection}
                 className={`
                   inline-flex items-center px-8 py-3 rounded-lg text-sm font-medium transition-all duration-200
