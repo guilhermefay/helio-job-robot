@@ -116,4 +116,4 @@ robo-empregos/
 
 ---
 
-**Desenvolvido com 💙 para revolucionar transições de carreira** 
+**Desenvolvido com 💙 para revolucionar transições de carreira** # Railway deploy trigger
