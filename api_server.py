@@ -37,12 +37,33 @@ logger = logging.getLogger(__name__)
 
 # Criar aplicação Flask
 app = Flask(__name__)
-CORS(app, origins=[
-    'http://localhost:3000', 
-    'http://127.0.0.1:3000',
-    'https://agenteslinkedin.vercel.app',
-    os.getenv("FRONTEND_URL", "http://localhost:3000")
-], supports_credentials=True)  # Permitir requisições do frontend
+
+# Configuração CORS flexível baseada em variáveis de ambiente
+if os.getenv("FLASK_CORS_ALLOW_ALL") == "true":
+    # Em produção, permite todos os domínios (funciona mas menos seguro)
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": False
+        }
+    })
+    print("🌍 CORS configurado para TODOS os domínios")
+else:
+    # Configuração mais específica para desenvolvimento
+    allowed_origins = [
+        'http://localhost:3000', 
+        'http://127.0.0.1:3000',
+        'https://agenteslinkedin.vercel.app',
+        os.getenv("FRONTEND_URL", "http://localhost:3000"),
+        os.getenv("CORS_ALLOW_ORIGIN", "")
+    ]
+    # Filtrar origins vazios
+    allowed_origins = [origin for origin in allowed_origins if origin]
+    
+    CORS(app, origins=allowed_origins, supports_credentials=True)
+    print(f"🔒 CORS configurado para domínios específicos: {allowed_origins}")
 
 # Configurar diretório de uploads
 UPLOAD_FOLDER = Path('uploads')

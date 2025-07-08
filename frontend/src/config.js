@@ -1,10 +1,5 @@
 // Configuração da API
-const BASE_API_URL = process.env.REACT_APP_API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
-
-// WORKAROUND TEMPORÁRIO PARA CORS - usando proxy público
-const USE_CORS_PROXY = process.env.NODE_ENV === 'production' && BASE_API_URL.includes('railway.app');
-const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
-const API_URL = USE_CORS_PROXY ? `${CORS_PROXY}${BASE_API_URL}` : BASE_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
 
 export default {
   API_URL,
