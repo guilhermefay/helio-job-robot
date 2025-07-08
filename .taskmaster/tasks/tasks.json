@@ -1,0 +1,275 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Configuração Inicial do Projeto",
+        "description": "Configurar ambiente de desenvolvimento e estrutura base do projeto",
+        "details": "✅ IMPLEMENTADO COMPLETAMENTE:\n- Repositório Git configurado\n- Estrutura de pastas criada para todos os 5 agentes\n- Ambiente Python configurado com FastAPI\n- requirements.txt com todas as dependências instaladas\n- Configuração de linting (black, flake8)\n- Docker e docker-compose configurados\n- PostgreSQL e Redis integrados\n- Sistema de configuração com Pydantic",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "testStrategy": "Verificar se o ambiente está funcionando corretamente",
+        "subtasks": []
+      },
+      {
+        "id": "2",
+        "title": "Pesquisa e Análise de APIs",
+        "description": "Pesquisar e documentar APIs necessárias para integração",
+        "details": "✅ IMPLEMENTADO COMPLETAMENTE:\n- APIs integradas: OpenAI, Anthropic Claude, HuggingFace\n- Web scraping implementado com Selenium e BeautifulSoup\n- APIs de análise de documentos: PyPDF2, python-docx\n- Sistema de processamento NLP configurado\n- Todas as integrações testadas e funcionais",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "testStrategy": "Documentar todas as APIs com exemplos de uso",
+        "subtasks": []
+      },
+      {
+        "id": "3",
+        "title": "Arquitetura do Sistema de Agentes",
+        "description": "Projetar arquitetura modular do sistema de agentes autônomos",
+        "details": "✅ IMPLEMENTADO COMPLETAMENTE:\n- Interfaces comuns entre agentes definidas (BaseAgent)\n- Sistema de comunicação entre agentes implementado\n- Estrutura de dados compartilhada com SQLAlchemy\n- Sistema de logs com Loguru configurado\n- Persistência de dados com PostgreSQL e Redis\n- Arquitetura modular com FastAPI",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "testStrategy": "Criar diagrama de arquitetura e validar com exemplos",
+        "subtasks": []
+      },
+      {
+        "id": "4",
+        "title": "Agente 0: Sistema de Diagnóstico e Onboarding",
+        "description": "Desenvolver agente inicial para coleta e análise de dados do usuário",
+        "details": "✅ IMPLEMENTADO COMPLETAMENTE (933 linhas):\n- Upload e parsing de currículo (PDF/Word) implementado\n- Sistema de questionário baseado em metodologia Carolina Martins\n- Análise de perfil profissional com IA\n- Geração de perfil unificado do usuário\n- Integração com banco de dados para persistência\n- Sistema de validação de dados implementado",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "testStrategy": "Testar com currículos reais e perfis LinkedIn variados",
+        "subtasks": []
+      },
+      {
+        "id": "5",
+        "title": "Agente 1: Extração de Palavras-chave",
+        "description": "Desenvolver agente para análise de vagas e extração de palavras-chave",
+        "details": "- Web scraping de vagas relevantes\n- Processamento de linguagem natural para extração\n- Análise de frequência e relevância\n- Ranqueamento de palavras-chave\n- Sistema de sugestões personalizadas",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "2",
+          "4"
+        ],
+        "testStrategy": "Validar extração com diferentes áreas profissionais",
+        "subtasks": []
+      },
+      {
+        "id": "6",
+        "title": "Agente 2: Otimização de Currículo",
+        "description": "Desenvolver agente para reestruturação de currículos seguindo método da Carol",
+        "details": "- Implementar regras do método Trocando de Emprego\n- Sistema de storytelling focado em resultados\n- Otimização de layout e clareza visual\n- Integração de palavras-chave relevantes\n- Geração de múltiplas versões",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "5"
+        ],
+        "testStrategy": "Comparar currículos antes e depois da otimização",
+        "subtasks": []
+      },
+      {
+        "id": "7",
+        "title": "Agente 3: Otimização de Perfil LinkedIn",
+        "description": "Desenvolver agente para otimização completa do perfil LinkedIn",
+        "details": "- Otimização de headline personalizada\n- Melhoria da seção 'Sobre'\n- Aprimoramento de experiências profissionais\n- Sugestões de habilidades e endorsements\n- Estratégias para aumento de visibilidade",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "5"
+        ],
+        "testStrategy": "Medir impacto nas visualizações e interações do perfil",
+        "subtasks": []
+      },
+      {
+        "id": "8",
+        "title": "Agente 4: Geração de Conteúdo",
+        "description": "Desenvolver agente para criação de estratégia de conteúdo",
+        "details": "- Roteiro editorial personalizado\n- Templates de postagens estratégicas\n- Sistema de narrativa pessoal-profissional\n- Calendário de publicações\n- Métricas de engajamento",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "7"
+        ],
+        "testStrategy": "Testar engajamento das postagens geradas",
+        "subtasks": []
+      },
+      {
+        "id": "9",
+        "title": "Sistema de Validação entre Agentes",
+        "description": "Implementar sistema de confirmação e validação entre etapas",
+        "details": "- Interface de confirmação para usuário\n- Sistema de feedback entre agentes\n- Pontos de parada obrigatórios\n- Histórico de decisões do usuário\n- Sistema de rollback se necessário",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "4",
+          "5",
+          "6",
+          "7"
+        ],
+        "testStrategy": "Testar fluxo completo com usuários reais",
+        "subtasks": []
+      },
+      {
+        "id": "10",
+        "title": "Sistema de Privacidade e Segurança",
+        "description": "Implementar controles rigorosos de privacidade e segurança de dados",
+        "details": "- Criptografia de dados sensíveis\n- Sistema de consentimento LGPD/GDPR\n- Controle de acesso e auditoria\n- Política de retenção de dados\n- Sistema de exclusão de dados",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "testStrategy": "Auditoria de segurança e compliance",
+        "subtasks": []
+      },
+      {
+        "id": "11",
+        "title": "Dashboard de Métricas e Resultados",
+        "description": "Criar dashboard para acompanhamento de progresso e resultados",
+        "details": "- Métricas de palavras-chave geradas\n- Tracking de aplicações e respostas\n- Estatísticas de engajamento LinkedIn\n- Relatórios de progresso\n- Gráficos de evolução profissional",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "9"
+        ],
+        "testStrategy": "Validar precisão das métricas coletadas",
+        "subtasks": []
+      },
+      {
+        "id": "12",
+        "title": "Testes de Integração dos Agentes",
+        "description": "Realizar testes completos de integração entre todos os agentes",
+        "details": "- Testes de fluxo end-to-end\n- Validação com casos reais diversos\n- Testes de performance e escalabilidade\n- Validação do método da Carol\n- Refinamento baseado em feedback",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "8",
+          "9",
+          "10"
+        ],
+        "testStrategy": "Executar cenários completos com usuários beta",
+        "subtasks": []
+      },
+      {
+        "id": "13",
+        "title": "Design da Jornada do Usuário",
+        "description": "Projetar experiência completa do usuário através dos agentes",
+        "details": "- Mapeamento da jornada completa\n- Design de interfaces intuitivas\n- Fluxo de onboarding eficiente\n- Pontos de engajamento e motivação\n- Sistema de gamificação opcional",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "12"
+        ],
+        "testStrategy": "Testes de usabilidade com usuários finais",
+        "subtasks": []
+      },
+      {
+        "id": "14",
+        "title": "Desenvolvimento da Interface Web",
+        "description": "Criar interface web amigável para integração de todos os agentes",
+        "details": "- Frontend responsivo e moderno\n- Integração com backend dos agentes\n- Sistema de autenticação seguro\n- Interface de upload de documentos\n- Dashboard interativo",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "13"
+        ],
+        "testStrategy": "Testes de compatibilidade cross-browser",
+        "subtasks": []
+      },
+      {
+        "id": "15",
+        "title": "Sistema de Feedback e Melhoria Contínua",
+        "description": "Implementar sistema de coleta de feedback e otimização",
+        "details": "- Coleta de feedback dos usuários\n- Análise de efetividade do método\n- Sistema de A/B testing\n- Melhorias baseadas em dados\n- Atualizações automáticas dos agentes",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          "14"
+        ],
+        "testStrategy": "Monitorar taxa de sucesso dos usuários",
+        "subtasks": []
+      },
+      {
+        "id": "16",
+        "title": "Documentação Técnica e do Usuário",
+        "description": "Criar documentação completa do sistema",
+        "details": "- Documentação técnica da API\n- Manual do usuário\n- Guias de troubleshooting\n- Documentação do método da Carol\n- Vídeos tutoriais",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          "14"
+        ],
+        "testStrategy": "Validar clareza da documentação com usuários",
+        "subtasks": []
+      },
+      {
+        "id": "17",
+        "title": "Testes de Carga e Performance",
+        "description": "Realizar testes de performance e escalabilidade do sistema",
+        "details": "- Testes de carga com múltiplos usuários\n- Otimização de queries de banco\n- Cache de resultados frequentes\n- Monitoramento de recursos\n- Estratégias de scaling",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "14"
+        ],
+        "testStrategy": "Simular cargas de produção esperadas",
+        "subtasks": []
+      },
+      {
+        "id": "18",
+        "title": "Deploy e Infraestrutura",
+        "description": "Configurar ambiente de produção e deploy automatizado",
+        "details": "- Configuração de servidores cloud\n- Pipeline de CI/CD\n- Monitoramento e alertas\n- Backup e disaster recovery\n- SSL e certificados de segurança",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "17"
+        ],
+        "testStrategy": "Testar deploy em ambiente de staging",
+        "subtasks": []
+      },
+      {
+        "id": "19",
+        "title": "Beta Testing com Usuários Reais",
+        "description": "Conduzir fase de beta testing com grupo seleto de usuários",
+        "details": "- Seleção de beta testers qualificados\n- Coleta estruturada de feedback\n- Análise de resultados e melhorias\n- Refinamento baseado em uso real\n- Preparação para lançamento",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          "18"
+        ],
+        "testStrategy": "Medir taxa de sucesso na mudança de emprego",
+        "subtasks": []
+      },
+      {
+        "id": "20",
+        "title": "Preparação para Launch",
+        "description": "Finalizar preparativos para lançamento público",
+        "details": "- Estratégia de marketing e comunicação\n- Pricing e modelo de negócio\n- Suporte ao cliente\n- Termos de uso e políticas\n- Plano de crescimento pós-launch",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          "19"
+        ],
+        "testStrategy": "Validar todos os sistemas estão prontos para produção",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-01-27T20:30:00Z",
+      "lastModified": "2025-01-27T20:30:00Z",
+      "version": "1.0.0",
+      "projectName": "Robô de Empregos - Trocando de Emprego",
+      "description": "Sistema de IA com agentes autônomos para automatizar o método Trocando de Emprego da Carolina Martins"
+    }
+  }
+}

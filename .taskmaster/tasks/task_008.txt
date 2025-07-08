@@ -1,0 +1,15 @@
+# Task ID: 8
+# Title: Agente 4: Geração de Conteúdo
+# Status: pending
+# Dependencies: 7 (Not found)
+# Priority: medium
+# Description: Desenvolver agente para criação de estratégia de conteúdo
+# Details:
+- Roteiro editorial personalizado
+- Templates de postagens estratégicas
+- Sistema de narrativa pessoal-profissional
+- Calendário de publicações
+- Métricas de engajamento
+
+# Test Strategy:
+Testar engajamento das postagens geradas

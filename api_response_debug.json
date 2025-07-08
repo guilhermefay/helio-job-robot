@@ -1,0 +1,70 @@
+{
+  "estrutura": {
+    "elementos": [
+      {
+        "nome": "Dados Pessoais",
+        "presente": true
+      },
+      {
+        "nome": "Objetivo Profissional",
+        "presente": true
+      },
+      {
+        "nome": "Resumo/Perfil",
+        "presente": true
+      },
+      {
+        "nome": "Experiências",
+        "presente": true
+      },
+      {
+        "nome": "Resultados Quantificados",
+        "presente": false
+      },
+      {
+        "nome": "Formação",
+        "presente": true
+      }
+    ],
+    "presentes": 5,
+    "total": 10
+  },
+  "honestidade": {
+    "alertas": [
+      "Informações pessoais irrelevantes, como signo, time de futebol, altura e peso.",
+      "Linguagem informal e vaga nas descrições das experiências, sem apresentação de resultados tangíveis ou intangíveis."
+    ],
+    "validacoes": [
+      {
+        "nome": "Datas consistentes",
+        "status": false
+      },
+      {
+        "nome": "Informações verificáveis",
+        "status": false
+      },
+      {
+        "nome": "Detalhamento adequado",
+        "status": false
+      },
+      {
+        "nome": "Uso de verbos de ação",
+        "status": false
+      }
+    ]
+  },
+  "id": "e092f9ff-c5de-4179-a524-9ef4a4059206",
+  "motivacaoUsuario": {
+    "cargoObjetivo": "Desenvolvedor Full Stack Senior",
+    "empresaSonho": "Google",
+    "estiloTrabalho": "Remoto com flexibilidade",
+    "valoresImportantes": "Inovação, trabalho em equipe"
+  },
+  "palavrasChave": [],
+  "sabotadoresIdentificados": [
+    "Procrastinação",
+    "Falta de foco"
+  ],
+  "score": 25,
+  "timestamp": "2025-07-05T08:30:49.032134"
+}

@@ -1,0 +1,15 @@
+# Task ID: 9
+# Title: Sistema de Validação entre Agentes
+# Status: pending
+# Dependencies: 4 (Not found), 5 (Not found), 6 (Not found), 7 (Not found)
+# Priority: high
+# Description: Implementar sistema de confirmação e validação entre etapas
+# Details:
+- Interface de confirmação para usuário
+- Sistema de feedback entre agentes
+- Pontos de parada obrigatórios
+- Histórico de decisões do usuário
+- Sistema de rollback se necessário
+
+# Test Strategy:
+Testar fluxo completo com usuários reais

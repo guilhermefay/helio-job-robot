@@ -1,0 +1,15 @@
+# Task ID: 6
+# Title: Agente 2: Otimização de Currículo
+# Status: pending
+# Dependencies: 5 (Not found)
+# Priority: high
+# Description: Desenvolver agente para reestruturação de currículos seguindo método da Carol
+# Details:
+- Implementar regras do método Trocando de Emprego
+- Sistema de storytelling focado em resultados
+- Otimização de layout e clareza visual
+- Integração de palavras-chave relevantes
+- Geração de múltiplas versões
+
+# Test Strategy:
+Comparar currículos antes e depois da otimização

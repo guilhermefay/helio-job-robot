@@ -1,0 +1,15 @@
+# Task ID: 2
+# Title: Pesquisa e Análise de APIs
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Pesquisar e documentar APIs necessárias para integração
+# Details:
+- API do LinkedIn (limitações e possibilidades)
+- APIs de job boards (Indeed, LinkedIn Jobs, etc.)
+- APIs de processamento de texto/NLP
+- APIs para análise de documentos PDF
+- Pesquisar alternativas de web scraping
+
+# Test Strategy:
+Documentar todas as APIs com exemplos de uso

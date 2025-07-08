@@ -1,0 +1,15 @@
+# Task ID: 17
+# Title: Testes de Carga e Performance
+# Status: pending
+# Dependencies: 14 (Not found)
+# Priority: medium
+# Description: Realizar testes de performance e escalabilidade do sistema
+# Details:
+- Testes de carga com múltiplos usuários
+- Otimização de queries de banco
+- Cache de resultados frequentes
+- Monitoramento de recursos
+- Estratégias de scaling
+
+# Test Strategy:
+Simular cargas de produção esperadas

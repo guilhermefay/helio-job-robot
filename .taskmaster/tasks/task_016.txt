@@ -1,0 +1,15 @@
+# Task ID: 16
+# Title: Documentação Técnica e do Usuário
+# Status: pending
+# Dependencies: 14 (Not found)
+# Priority: low
+# Description: Criar documentação completa do sistema
+# Details:
+- Documentação técnica da API
+- Manual do usuário
+- Guias de troubleshooting
+- Documentação do método da Carol
+- Vídeos tutoriais
+
+# Test Strategy:
+Validar clareza da documentação com usuários

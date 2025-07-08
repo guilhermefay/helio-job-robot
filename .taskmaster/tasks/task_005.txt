@@ -1,0 +1,15 @@
+# Task ID: 5
+# Title: Agente 1: Extração de Palavras-chave
+# Status: pending
+# Dependencies: 2 (Not found), 4 (Not found)
+# Priority: high
+# Description: Desenvolver agente para análise de vagas e extração de palavras-chave
+# Details:
+- Web scraping de vagas relevantes
+- Processamento de linguagem natural para extração
+- Análise de frequência e relevância
+- Ranqueamento de palavras-chave
+- Sistema de sugestões personalizadas
+
+# Test Strategy:
+Validar extração com diferentes áreas profissionais

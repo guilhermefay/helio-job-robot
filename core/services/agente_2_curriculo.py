@@ -66,8 +66,7 @@ class CurriculoCarolinaMartins:
         curriculo = Curriculo(
             usuario_id=usuario_id,
             tipo=TipoCurriculo.BASE.value,
-            status=StatusCurriculo.EM_CONSTRUCAO.value,
-            versao=1
+            status=StatusCurriculo.RASCUNHO.value
         )
         self.db.add(curriculo)
         self.db.commit()
@@ -160,7 +159,7 @@ class CurriculoCarolinaMartins:
             self.db.commit()
             
         except Exception as e:
-            curriculo.status = StatusCurriculo.ERRO.value
+            curriculo.status = StatusCurriculo.RASCUNHO.value
             self.db.commit()
             raise e
         
@@ -190,7 +189,7 @@ class CurriculoCarolinaMartins:
         curriculo_personalizado = Curriculo(
             usuario_id=curriculo_base.usuario_id,
             tipo=TipoCurriculo.PERSONALIZADO.value,
-            status=StatusCurriculo.EM_CONSTRUCAO.value,
+            status=StatusCurriculo.RASCUNHO.value,
             curriculo_base_id=curriculo_base_id,
             vaga_empresa=vaga_dados.get("empresa", ""),
             vaga_cargo=vaga_dados.get("cargo", ""),
@@ -1260,6 +1259,8 @@ class CurriculoCarolinaMartins:
         return len(telefone) >= 10
     
     def _validar_linkedin_personalizado(self, url: str) -> bool:
+        if not url or not isinstance(url, str):
+            return False
         return "/in/" in url and not url.endswith("/in/")
     
     def _validar_endereco_profissional(self, endereco: str) -> bool:

@@ -1,0 +1,15 @@
+# Task ID: 1
+# Title: Configuração Inicial do Projeto
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Configurar ambiente de desenvolvimento e estrutura base do projeto
+# Details:
+- Configurar repositório Git
+- Criar estrutura de pastas
+- Configurar ambiente Python/Node.js
+- Instalar dependências básicas
+- Configurar linting e formatação
+
+# Test Strategy:
+Verificar se o ambiente está funcionando corretamente

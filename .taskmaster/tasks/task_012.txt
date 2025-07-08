@@ -1,0 +1,15 @@
+# Task ID: 12
+# Title: Testes de Integração dos Agentes
+# Status: pending
+# Dependencies: 8 (Not found), 9 (Not found), 10 (Not found)
+# Priority: high
+# Description: Realizar testes completos de integração entre todos os agentes
+# Details:
+- Testes de fluxo end-to-end
+- Validação com casos reais diversos
+- Testes de performance e escalabilidade
+- Validação do método da Carol
+- Refinamento baseado em feedback
+
+# Test Strategy:
+Executar cenários completos com usuários beta

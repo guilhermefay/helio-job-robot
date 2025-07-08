@@ -1,0 +1,177 @@
+# PRD - Robô de Empregos (Projeto Trocando de Emprego)
+
+## 1. VISÃO GERAL DO PROJETO
+
+### Contexto
+O Programa Trocando de Emprego é um método validado por mais de 13 mil alunos que ajuda profissionais a conquistarem novas oportunidades de trabalho através de estratégia inteligente no LinkedIn. Desenvolvido pela Carolina Martins, a profissional mais seguida do LinkedIn na América Latina.
+
+### Problema
+- 60% dos trabalhadores estão insatisfeitos com seus empregos atuais
+- Falta de tempo/energia para implementar o método manualmente
+- Procrastinação na mudança de emprego por ansiedade/sobrecarga
+
+### Solução (MVP)
+Sistema de IA com agentes autônomos que executam/sugerem ações baseadas em dados reais, seguindo o método Trocando de Emprego.
+
+## 2. OBJETIVOS
+
+### Objetivo Principal
+Transformar as etapas centrais do método Trocando de Emprego em uma experiência assistida por IA.
+
+### Objetivos Específicos
+- Automatizar análise de currículos e perfis LinkedIn
+- Extrair palavras-chave de vagas reais
+- Otimizar currículos seguindo método da Carol
+- Otimizar perfis LinkedIn (headline, sobre, experiências)
+- Gerar conteúdo editorial estratégico
+
+## 3. PÚBLICO-ALVO
+
+### Perfil Principal
+- Profissionais com ensino superior completo
+- Atuantes no mundo corporativo
+- Já possuem perfil no LinkedIn
+- Valorizam LinkedIn como ferramenta de recolocação
+- Têm pouco tempo para aplicar método sozinhos
+- Procrastinam mudança por ansiedade/sobrecarga
+- Buscam clareza, autonomia assistida e resultados concretos
+
+## 4. FUNCIONALIDADES (MVP)
+
+### 4.1 Agente 0: Diagnóstico e Onboarding
+**Objetivo:** Coleta e interpretação de dados iniciais do usuário
+**Funcionalidades:**
+- Upload e análise de currículo
+- Análise de perfil do LinkedIn
+- Questionário sobre cargo/empresa dos sonhos
+- Avaliação de estilo de trabalho
+- Definição de objetivos e motivação
+- Geração de perfil profissional completo
+
+### 4.2 Agente 1: Palavras-chave
+**Objetivo:** Identificar palavras-chave relevantes baseadas em vagas reais
+**Funcionalidades:**
+- Busca automática de vagas na área de interesse
+- Extração de palavras-chave mais recorrentes
+- Análise de relevância e tendências
+- Lista personalizada fundamentada em dados concretos
+
+### 4.3 Agente 2: Currículo (Método da Carol)
+**Objetivo:** Reestruturação do currículo seguindo metodologia
+**Funcionalidades:**
+- Storytelling focado em resultados
+- Otimização de clareza e impacto visual
+- Alinhamento com requisitos das vagas desejadas
+- Integração das palavras-chave identificadas
+
+### 4.4 Agente 3: LinkedIn (Método da Carol)
+**Objetivo:** Otimização completa do perfil LinkedIn
+**Funcionalidades:**
+- Otimização de headline
+- Melhoria da seção "sobre"
+- Aprimoramento de experiências profissionais
+- Aumento de visibilidade e autoridade
+- Melhoria do match com recrutadores
+
+### 4.5 Agente 4: Conteúdo (Método da Carol)
+**Objetivo:** Geração de estratégia de conteúdo
+**Funcionalidades:**
+- Roteiro editorial personalizado
+- Esboços de postagens estratégicas
+- Conteúdo com propósito definido
+- Narrativa pessoal-profissional
+- Construção de autoridade na área-alvo
+
+## 5. REQUISITOS TÉCNICOS
+
+### 5.1 Arquitetura
+- Sistema baseado em agentes autônomos
+- Desenvolvimento modular (um agente por vez)
+- Validação interna com casos reais
+- Backend primeiro, frontend depois
+
+### 5.2 Integrações Necessárias
+- APIs de plataformas de emprego (LinkedIn, Indeed, etc.)
+- Processamento de linguagem natural (NLP)
+- Análise de documentos (PDF/Word)
+- Web scraping para análise de vagas
+
+### 5.3 Dados e Privacidade
+- Controle rigoroso de dados pessoais
+- Privacidade obrigatória
+- Armazenamento seguro de informações
+
+## 6. CRITÉRIOS DE SUCESSO
+
+### Métricas Quantitativas
+- Palavras-chave geradas por sessão
+- Currículos otimizados
+- Perfis LinkedIn atualizados
+- Posts publicados
+- Entrevistas agendadas
+
+### Critérios Qualitativos
+- Conteúdo personalizado (não genérico)
+- Respeito ao contexto do usuário
+- Experiência simples e intuitiva
+- Rigor na aplicação do método
+- Resultados mensuráveis
+
+## 7. RESTRIÇÕES E LIMITAÇÕES
+
+### Técnicas
+- IA não pode gerar conteúdo genérico
+- Cada agente deve respeitar contexto específico
+- Experiência deve ser progressiva (um passo por vez)
+- Validação obrigatória entre etapas
+
+### Metodológicas
+- Rigor na aplicação do método Trocando de Emprego
+- Manutenção da autoridade da marca
+- Base comprovada, não achismos
+
+## 8. ESTRATÉGIA DE DESENVOLVIMENTO (MVP)
+
+### Fase 1: Desenvolvimento dos Agentes
+1. Agente 0: Diagnóstico e Onboarding
+2. Agente 1: Palavras-chave
+3. Agente 2: Currículo
+4. Agente 3: LinkedIn
+5. Agente 4: Conteúdo
+
+### Fase 2: Integração e Validação
+- Validação interna de cada agente
+- Testes com casos reais
+- Refinamento baseado em feedback
+
+### Fase 3: Jornada do Usuário
+- Design da experiência integrada
+- Fluxo entre agentes
+- Pontos de validação e confirmação
+
+### Fase 4: Frontend
+- Interface amigável e intuitiva
+- Integração com backend
+- Dashboard de progresso
+- Relatórios de resultados
+
+## 9. DIFERENCIAIS ESTRATÉGICOS
+
+- Método validado com 13 mil alunos
+- Autoridade da marca Carolina Martins
+- IA que executa tarefas, não só conversa
+- Aplicação prática e mensurável
+- Base em dados reais, não teoria
+
+## 10. CONSIDERAÇÕES FINAIS
+
+### Tom e Valores
+- Linguagem prática, direta e empática
+- IA como parceira, não substituta
+- Foco em execução e resultados
+
+### Próximos Passos
+1. Desenvolvimento do Agente 0 (Diagnóstico)
+2. Validação com casos piloto
+3. Iteração baseada em feedback
+4. Expansão para próximos agentes 

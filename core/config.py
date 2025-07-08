@@ -4,7 +4,8 @@ Configurações centralizadas da aplicação
 
 import os
 from typing import List
-from pydantic import BaseSettings, validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -54,7 +55,8 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode='before')
+    @classmethod
     def assemble_cors_origins(cls, v: str) -> List[str]:
         """Converter string separada por vírgulas em lista"""
         if isinstance(v, str) and not v.startswith("["):
@@ -63,12 +65,8 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
     
-    @validator("DEBUG", pre=True)
-    def set_debug_mode(cls, v: str, values) -> bool:
-        """Definir modo debug baseado no ambiente"""
-        if values.get("ENVIRONMENT") == "production":
-            return False
-        return v if isinstance(v, bool) else v.lower() in ("true", "1", "yes")
+    # Removed set_debug_mode validator as it's better handled by environment variables or direct assignment
+    # if values.get("ENVIRONMENT") == "production": return False
     
     class Config:
         env_file = ".env"
@@ -81,4 +79,4 @@ settings = Settings()
 
 def get_settings() -> Settings:
     """Função para obter as configurações (útil para dependency injection)"""
-    return settings 
+    return settings

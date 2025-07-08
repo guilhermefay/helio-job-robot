@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from enum import Enum
 
-Base = declarative_base()
+# Import unified Base
+from .base import Base
 
 class SituacaoCarreira(str, Enum):
     PRIMEIRA_EXPERIENCIA = "primeira_experiencia"

@@ -1,0 +1,15 @@
+# Task ID: 4
+# Title: Agente 0: Sistema de Diagnóstico e Onboarding
+# Status: pending
+# Dependencies: 3 (Not found)
+# Priority: high
+# Description: Desenvolver agente inicial para coleta e análise de dados do usuário
+# Details:
+- Upload e parsing de currículo (PDF/Word)
+- Extração de dados do perfil LinkedIn
+- Sistema de questionário inteligente
+- Análise de perfil profissional
+- Geração de perfil unificado do usuário
+
+# Test Strategy:
+Testar com currículos reais e perfis LinkedIn variados

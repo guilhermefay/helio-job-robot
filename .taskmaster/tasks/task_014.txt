@@ -1,0 +1,15 @@
+# Task ID: 14
+# Title: Desenvolvimento da Interface Web
+# Status: pending
+# Dependencies: 13 (Not found)
+# Priority: medium
+# Description: Criar interface web amigável para integração de todos os agentes
+# Details:
+- Frontend responsivo e moderno
+- Integração com backend dos agentes
+- Sistema de autenticação seguro
+- Interface de upload de documentos
+- Dashboard interativo
+
+# Test Strategy:
+Testes de compatibilidade cross-browser

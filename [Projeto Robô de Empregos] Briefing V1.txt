@@ -1,0 +1,99 @@
+[Projeto Robô de Empregos] Briefing V1
+1. Contexto
+O Programa Trocando de Emprego é um método validado por mais de 13 mil alunos que ajuda
+profissionais a conquistarem novas oportunidades de trabalho por meio de uma estratégia
+inteligente no LinkedIn. O curso tem como base o método Carreira Meteórica desenvolvido pela
+Carolina Martins, a profissional mais seguida do LinkedIn na América Latina.
+O Programa é um curso que ensina o profissional exatamente o que ele precisa fazer. Mesmo
+assim, cerca de 60% dos trabalhadores estão insatisfeitos com seus empregos atuais porque
+não tem tempo / energia para colocar em prática.
+2. Objetivo do Projeto com IA (Foco no MVP)
+Transformar as etapas centrais do método Trocando de Emprego em uma experiência assistida
+por IA. O sistema guiará o usuário por meio de agentes autônomos que executam ou sugerem
+ações com base em dados reais, seguindo o método ensinado pela Carol.
+Etapas incluídas no MVP:
+Etapa Ação Esperada da IA
+0. Diagnóstico e
+Onboarding
+(Agente Inicial)
+Coleta e interpretação dos dados iniciais do usuário: – Upload do
+currículo – Análise do perfil do LinkedIn – Perguntas sobre cargo,
+empresa dos sonhos, estilo de trabalho, objetivos e motivação Objetivo:
+gerar um perfil profissional claro e completo para alimentar os demais
+agentes.
+1. Palavras-chave Buscar vagas reais da área de interesse do usuário para extrair as
+palavras-chave mais recorrentes e relevantes. A lista deve ser
+personalizada e fundamentada em dados concretos.
+2. Currículo
+(Método da Carol)
+A IA reestrutura ou sugere melhorias no currículo, com base nas
+palavras-chave e nos pilares do método da Carol: – Storytelling focado
+em resultados – Clareza e impacto visual – Alinhamento com os
+requisitos das vagas desejadas
+3. LinkedIn
+(Método da Carol)
+Otimização de headline,
+“sobre” e experiências usando as
+palavras-chave e seguindo o modelo ensinado no curso. O perfil final
+deve aumentar visibilidade, autoridade e match com recrutadores.
+4. Conteúdo
+(Método da Carol)
+Geração de roteiro editorial e esboços de postagens conforme a
+metodologia do curso: – Conteúdo com propósito – Narrativa
+pessoal-profissional – Construção de autoridade na área-alvo
+3. Público-Alvo
+Profissionais com ensino superior completo, que atuam no mundo corporativo e já possuem
+um perfil no LinkedIn.
+●
+Valorizam o LinkedIn como ferramenta de recolocação, mas têm pouco tempo para
+aplicar o método sozinhos.
+●
+Frequentemente procrastinam a mudança de emprego, muitas vezes por ansiedade
+ou sobrecarga mental.
+●
+Buscam clareza, autonomia assistida e resultados concretos.
+4. Tons e Valores da Marca
+●
+Linguagem prática, direta e empática;
+●
+IA como parceira do progresso, não substituta do esforço humano;
+●
+Conteúdo e entregas com base comprovada, não achismos.
+5. Diferenciais Estratégicos
+●
+Método já testado com 13 mil alunos;
+●
+Forte autoridade de marca pessoal da fundadora;
+●
+Aplicação prática e mensurável;
+●
+IA que realmente executa tarefas difíceis, não só “conversa”
+.
+6. MVP
+O desenvolvimento seguirá a lógica de validação por etapas:
+●
+Entregar um agente por vez, em formato funcional, sem necessidade de frontend.
+●
+Cada agente será validado internamente com casos reais.
+●
+Após a validação de todos os agentes, desenhamos a jornada do usuário.
+●
+Depois de aprovação da jornada do usuário, inicia-se o desenvolvimento de um
+frontend integrado e amigável.
+7. Pontos de Atenção
+●
+A IA não pode gerar conteúdos genéricos ou parecer impessoal;
+●
+Cada agente deve respeitar o contexto e objetivo do usuário;
+●
+A experiência precisa ser simples, um passo por vez, sem sobrecarregar o usuário;
+●
+Na jornada do usuário, é preciso validar a última etapa com o usuário, pedindo uma
+confirmação, antes de seguir para a próxima;
+●
+A IA deve seguir com rigor o método ensinado no curso Trocando de Emprego;
+●
+Privacidade e controle de dados são obrigatórios;
+●
+Resultados devem ser mensuráveis (ex: palavras geradas, posts publicados, entrevistas
+agendadas).

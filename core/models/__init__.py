@@ -74,18 +74,17 @@ from .linkedin import (
     Base as LinkedInBase
 )
 
-# Unifica todas as bases para SQLAlchemy
-from sqlalchemy.ext.declarative import declarative_base
-
-# Base única para todos os modelos
-Base = declarative_base()
+# Import unified Base from base.py
+from .base import Base
 
 # Importa todos os modelos para registro automático
-from .user import *
-from .curriculo import *
-from .palavras_chave import *
-from .candidatura import *
-from .linkedin import *
+from .user import User, SituacaoCarreira, StatusEmprego, Sabotador, NivelSenioridade, TipoEmpresa
+from .curriculo import Curriculo, ExperienciaProfissional, FormacaoAcademica, CompetenciaUsuario, TipoCurriculo, StatusCurriculo
+from .palavras_chave import MapaPalavrasChave, VagaAnalisada, PalavraChave, ProcessamentoMPC, ValidacaoIA, CategoriaPalavraChave, StatusMPC
+from .candidatura import Candidatura, Entrevista, ProcessoSeletivo, StatusCandidatura, TipoEntrevista, FonteVaga
+from .linkedin import PerfilLinkedIn, ExperienciaLinkedIn, ConteudoLinkedIn, EstrategiaConteudo, MetricasLinkedIn, StatusPerfilLinkedIn, TipoConteudo, StatusSSI
+
+# Models will inherit from the common Base through their import pattern
 
 __all__ = [
     # User models

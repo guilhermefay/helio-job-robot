@@ -1,0 +1,46 @@
+{
+  "estrutura": {
+    "elementos": [],
+    "presentes": 0,
+    "total": 10
+  },
+  "honestidade": {
+    "alertas": [
+      "⚠️ ANÁLISE SIMPLES - Configure API keys para análise com IA real",
+      "Linguagem não profissional detectada",
+      "Informações pessoais irrelevantes"
+    ],
+    "validacoes": [
+      {
+        "nome": "Datas consistentes",
+        "status": false
+      },
+      {
+        "nome": "Informações verificáveis",
+        "status": false
+      },
+      {
+        "nome": "Detalhamento adequado",
+        "status": false
+      },
+      {
+        "nome": "Uso de verbos de ação",
+        "status": false
+      }
+    ]
+  },
+  "id": "0d14d2cc-755a-49bc-9dcb-ec58cfcea0c3",
+  "motivacaoUsuario": {
+    "cargoObjetivo": "Desenvolvedor Full Stack Senior",
+    "empresaSonho": "Google",
+    "estiloTrabalho": "Remoto com flexibilidade",
+    "valoresImportantes": "Inovação, trabalho em equipe"
+  },
+  "palavrasChave": [],
+  "sabotadoresIdentificados": [
+    "Procrastinação",
+    "Falta de foco"
+  ],
+  "score": 35,
+  "timestamp": "2025-07-05T08:42:04.906386"
+}

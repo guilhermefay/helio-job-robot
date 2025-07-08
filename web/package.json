@@ -1,0 +1,44 @@
+{
+  "name": "helio-frontend",
+  "version": "1.0.0",
+  "description": "Frontend para Sistema HELIO - Metodologia Carolina Martins",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@types/node": "20.10.5",
+    "@types/react": "18.2.45",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "10.4.16",
+    "axios": "^1.10.0",
+    "class-variance-authority": "0.7.0",
+    "clsx": "2.0.0",
+    "lucide-react": "0.294.0",
+    "next": "^14.2.30",
+    "postcss": "8.4.32",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-hook-form": "7.48.2",
+    "react-query": "3.39.3",
+    "recharts": "2.8.0",
+    "tailwindcss": "3.3.6",
+    "typescript": "5.3.3"
+  },
+  "devDependencies": {
+    "eslint": "8.56.0",
+    "eslint-config-next": "14.0.4"
+  },
+  "keywords": [
+    "react",
+    "nextjs",
+    "carolina-martins",
+    "job-search",
+    "ai-agents"
+  ],
+  "author": "Sistema HELIO",
+  "license": "MIT"
+}

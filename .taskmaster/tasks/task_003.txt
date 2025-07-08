@@ -1,0 +1,15 @@
+# Task ID: 3
+# Title: Arquitetura do Sistema de Agentes
+# Status: pending
+# Dependencies: 1 (Not found)
+# Priority: high
+# Description: Projetar arquitetura modular do sistema de agentes autônomos
+# Details:
+- Definir interfaces comuns entre agentes
+- Projetar sistema de comunicação entre agentes
+- Definir estrutura de dados compartilhada
+- Planejar sistema de logs e monitoramento
+- Definir estratégia de persistência de dados
+
+# Test Strategy:
+Criar diagrama de arquitetura e validar com exemplos
