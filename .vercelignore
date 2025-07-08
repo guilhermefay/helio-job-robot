@@ -1,0 +1,21 @@
+# Ignorar TUDO exceto o frontend
+/*
+!/frontend/
+!/vercel.json
+!/package.json
+
+# Dentro do frontend, ignorar apenas o que não é necessário
+frontend/node_modules/.cache/
+frontend/.next/
+frontend/build/
+frontend/dist/
+
+# Arquivos de desenvolvimento 
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# OS
+.DS_Store
+Thumbs.db 
