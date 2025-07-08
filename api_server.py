@@ -5,7 +5,7 @@ Expõe endpoints para os agentes funcionais
 """
 
 from flask import Flask, request, jsonify, Response, stream_with_context
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import asyncio
 import json
 import logging
@@ -62,6 +62,7 @@ ai_keyword_extractor = AIKeywordExtractor()
 results_store = {}
 
 @app.route('/api/health', methods=['GET'])
+@cross_origin(origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
 def health_check():
     """Verificar saúde da API"""
     return jsonify({
@@ -856,6 +857,7 @@ def test_quick_collect():
         }), 500
 
 @app.route('/api/agent1/collect-jobs', methods=['POST'])
+@cross_origin(origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
 def collect_jobs_only():
     """Endpoint para APENAS coletar vagas do Apify - Etapa 1"""
     try:
@@ -960,6 +962,7 @@ def collect_jobs_only():
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
 @app.route('/api/agent1/analyze-keywords', methods=['POST'])
+@cross_origin(origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
 def analyze_keywords():
     """Endpoint para analisar palavras-chave com Gemini - Etapa 2"""
     try:
