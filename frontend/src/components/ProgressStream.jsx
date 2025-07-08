@@ -86,7 +86,7 @@ const ProgressStream = ({ isActive, onComplete, onError, requestData }) => {
     // Não podemos usar EventSource com POST, então vamos usar fetch com ReadableStream
     const fetchStream = async () => {
       try {
-        const response = await fetch('config.endpoints.agent1.collectKeywordsStream', {
+        const response = await fetch(config.endpoints.agent1.collectKeywordsStream, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

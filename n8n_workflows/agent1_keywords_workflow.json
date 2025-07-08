@@ -1,0 +1,446 @@
+{
+  "name": "Agent 1 - Mapa de Palavras-Chave MPC (Metodologia Carol Martins)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent1-collect-keywords",
+        "responseMode": "lastNode",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "webhook_receiver",
+      "name": "Webhook - Receive Keyword Collection Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "agent1-keyword-collection"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and validate input parameters\nconst items = [];\n\nfor (const item of $input.all()) {\n  // Required parameters\n  const areaInteresse = item.json.area_interesse || item.json.areaInteresse;\n  const cargoObjetivo = item.json.cargo_objetivo || item.json.cargoObjetivo;\n  const localizacao = item.json.localizacao || 'Brasil';\n  const totalVagasDesejadas = parseInt(item.json.total_vagas_desejadas || item.json.totalVagasDesejadas || '50');\n  const tipoVaga = item.json.tipo_vaga || item.json.tipoVaga || 'remoto';\n  \n  // Optional parameters\n  const segmentosAlvo = item.json.segmentos_alvo || item.json.segmentosAlvo || [];\n  \n  // Validate required fields\n  if (!areaInteresse || !cargoObjetivo) {\n    throw new Error('Missing required fields: area_interesse and cargo_objetivo');\n  }\n  \n  // Generate collection ID\n  const collectionId = `keywords_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  \n  items.push({\n    json: {\n      collectionId,\n      areaInteresse,\n      cargoObjetivo,\n      localizacao,\n      totalVagasDesejadas,\n      tipoVaga,\n      segmentosAlvo,\n      timestamp: new Date().toISOString(),\n      step: 'initialization'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "extract_parameters",
+      "name": "Extract Parameters",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Query Expansion - Generate variations of job titles\nconst items = [];\n\nfor (const item of $input.all()) {\n  const cargo = item.json.cargoObjetivo;\n  const area = item.json.areaInteresse;\n  \n  // Common title variations patterns\n  const variations = new Set();\n  \n  // Add original\n  variations.add(cargo);\n  \n  // Add area + cargo combinations\n  variations.add(`${cargo} ${area}`);\n  variations.add(`${area} ${cargo}`);\n  \n  // Level variations\n  const levels = ['Junior', 'Pleno', 'Senior', 'Jr', 'Sr', 'I', 'II', 'III'];\n  const baseCargo = cargo.replace(/junior|pleno|senior|jr|sr|\\s+i+$/i, '').trim();\n  \n  levels.forEach(level => {\n    variations.add(`${baseCargo} ${level}`);\n    variations.add(`${level} ${baseCargo}`);\n  });\n  \n  // English/Portuguese variations\n  const translations = {\n    'desenvolvedor': ['developer', 'dev'],\n    'engenheiro': ['engineer'],\n    'analista': ['analyst'],\n    'gerente': ['manager'],\n    'coordenador': ['coordinator', 'lead'],\n    'especialista': ['specialist', 'expert'],\n    'consultor': ['consultant'],\n    'arquiteto': ['architect']\n  };\n  \n  Object.entries(translations).forEach(([pt, en]) => {\n    if (cargo.toLowerCase().includes(pt)) {\n      en.forEach(eng => {\n        variations.add(cargo.toLowerCase().replace(pt, eng));\n      });\n    }\n  });\n  \n  // Technology-specific variations\n  if (area.toLowerCase().includes('tech') || area.toLowerCase().includes('ti')) {\n    const techTerms = ['Full Stack', 'Frontend', 'Backend', 'DevOps', 'Cloud', 'Data'];\n    techTerms.forEach(term => {\n      if (cargo.toLowerCase().includes(term.toLowerCase())) {\n        variations.add(`${term} ${baseCargo}`);\n      }\n    });\n  }\n  \n  // Convert to array and limit\n  const queryVariations = Array.from(variations).slice(0, 10);\n  \n  items.push({\n    json: {\n      ...item.json,\n      queryVariations,\n      totalVariations: queryVariations.length,\n      step: 'query_expansion'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "query_expansion",
+      "name": "Query Expansion",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Location Expansion - Generate nearby locations\nconst items = [];\n\nfor (const item of $input.all()) {\n  const location = item.json.localizacao;\n  const jobType = item.json.tipoVaga;\n  \n  const locationVariations = new Set();\n  \n  // Always add original location\n  locationVariations.add(location);\n  \n  // Add remote option if applicable\n  if (jobType === 'remoto' || jobType === 'hibrido') {\n    locationVariations.add('Remote');\n    locationVariations.add('Remoto');\n    locationVariations.add('Brazil');\n    locationVariations.add('Brasil');\n  }\n  \n  // Major Brazilian cities and their variations\n  const majorCities = {\n    'São Paulo': ['SP', 'Sao Paulo', 'São Paulo, SP'],\n    'Rio de Janeiro': ['RJ', 'Rio', 'Rio de Janeiro, RJ'],\n    'Belo Horizonte': ['BH', 'Belo Horizonte, MG'],\n    'Porto Alegre': ['POA', 'Porto Alegre, RS'],\n    'Curitiba': ['CTBA', 'Curitiba, PR'],\n    'Brasília': ['BSB', 'Brasilia', 'Distrito Federal'],\n    'Salvador': ['SSA', 'Salvador, BA'],\n    'Fortaleza': ['FOR', 'Fortaleza, CE'],\n    'Recife': ['REC', 'Recife, PE'],\n    'Campinas': ['Campinas, SP'],\n    'Florianópolis': ['Floripa', 'Florianópolis, SC']\n  };\n  \n  // Check if input location matches any major city\n  Object.entries(majorCities).forEach(([city, variations]) => {\n    if (location.toLowerCase().includes(city.toLowerCase()) || \n        variations.some(v => location.toLowerCase().includes(v.toLowerCase()))) {\n      locationVariations.add(city);\n      variations.forEach(v => locationVariations.add(v));\n    }\n  });\n  \n  // If no specific city found, add major tech hubs\n  if (locationVariations.size <= 2) {\n    ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Campinas'].forEach(city => {\n      locationVariations.add(city);\n    });\n  }\n  \n  // Convert to array and prioritize\n  let locations = Array.from(locationVariations);\n  \n  // Prioritize based on job type\n  if (jobType === 'remoto') {\n    // Put remote options first\n    locations = locations.sort((a, b) => {\n      if (a.toLowerCase().includes('remot')) return -1;\n      if (b.toLowerCase().includes('remot')) return 1;\n      return 0;\n    });\n  }\n  \n  items.push({\n    json: {\n      ...item.json,\n      locationVariations: locations.slice(0, 8),\n      totalLocations: locations.length,\n      step: 'location_expansion'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "location_expansion",
+      "name": "Location Expansion",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create job search combinations\nconst items = [];\n\nfor (const item of $input.all()) {\n  const queries = item.json.queryVariations || [item.json.cargoObjetivo];\n  const locations = item.json.locationVariations || [item.json.localizacao];\n  const totalVagasDesejadas = item.json.totalVagasDesejadas;\n  \n  // Create combinations\n  const searchCombinations = [];\n  let combinationId = 0;\n  \n  // Calculate jobs per combination\n  const totalCombinations = queries.length * locations.length;\n  const jobsPerCombination = Math.ceil(totalVagasDesejadas / totalCombinations);\n  \n  for (const query of queries) {\n    for (const location of locations) {\n      searchCombinations.push({\n        id: combinationId++,\n        query,\n        location,\n        jobsToCollect: Math.min(jobsPerCombination, 50), // LinkedIn limit per search\n        status: 'pending'\n      });\n    }\n  }\n  \n  // Prioritize combinations\n  // Original query + original location first\n  searchCombinations.sort((a, b) => {\n    const aIsOriginal = a.query === item.json.cargoObjetivo && a.location === item.json.localizacao;\n    const bIsOriginal = b.query === item.json.cargoObjetivo && b.location === item.json.localizacao;\n    if (aIsOriginal && !bIsOriginal) return -1;\n    if (!aIsOriginal && bIsOriginal) return 1;\n    return 0;\n  });\n  \n  items.push({\n    json: {\n      ...item.json,\n      searchCombinations,\n      totalCombinations: searchCombinations.length,\n      step: 'search_combinations'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "create_search_combinations",
+      "name": "Create Search Combinations",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split_combinations",
+      "name": "Split Combinations",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$env.APIFY_API_TOKEN}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "check_apify_token",
+      "name": "Has Apify Token?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/curious_coder~linkedin-jobs-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{$env.APIFY_API_TOKEN}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"urls\": [\"https://www.linkedin.com/jobs/search/?keywords={{encodeURIComponent($json.searchCombinations[0].query)}}&location={{encodeURIComponent($json.searchCombinations[0].location)}}\"],\n  \"numberOfJobsNeeded\": {{$json.searchCombinations[0].jobsToCollect}},\n  \"scrapeCompanyDetails\": true,\n  \"proxy\": {\n    \"useApifyProxy\": true,\n    \"apifyProxyGroups\": [\"RESIDENTIAL\"]\n  }\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "apify_linkedin_scraper",
+      "name": "Apify LinkedIn Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 200],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate demo job data when Apify is not available\nconst items = [];\n\nfor (const item of $input.all()) {\n  const combination = item.json.searchCombinations[0];\n  const numJobs = combination.jobsToCollect;\n  \n  // Demo job templates based on common tech roles\n  const jobTemplates = [\n    {\n      title: combination.query,\n      company: 'Tech Innovations Brasil',\n      location: combination.location,\n      description: `Estamos buscando ${combination.query} para trabalhar em projetos desafiadores. Requisitos: JavaScript, React, Node.js, TypeScript, Git, metodologias ágeis. Diferenciais: AWS, Docker, CI/CD.`\n    },\n    {\n      title: `${combination.query} - Startup em Crescimento`,\n      company: 'Digital Solutions LTDA',\n      location: combination.location,\n      description: `Oportunidade para ${combination.query} com experiência em Python, Django, PostgreSQL, REST APIs. Valorizamos: trabalho em equipe, comunicação, proatividade, inglês avançado.`\n    },\n    {\n      title: `Vaga ${combination.query}`,\n      company: 'Global Tech Company',\n      location: combination.location,\n      description: `Procuramos ${combination.query} com conhecimentos em Java, Spring Boot, Microservices, Kubernetes. Benefícios: home office, plano de saúde, vale alimentação, participação nos lucros.`\n    }\n  ];\n  \n  // Generate jobs\n  const jobs = [];\n  for (let i = 0; i < numJobs; i++) {\n    const template = jobTemplates[i % jobTemplates.length];\n    jobs.push({\n      titulo: `${template.title} #${i + 1}`,\n      empresa: template.company,\n      localizacao: template.location,\n      descricao: template.description,\n      url: `https://demo.linkedin.com/jobs/${combination.query.replace(/\\s+/g, '-')}-${i}`,\n      data_publicacao: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),\n      fonte: 'Demo Data'\n    });\n  }\n  \n  items.push({\n    json: {\n      ...item.json,\n      collectedJobs: jobs,\n      totalJobsCollected: jobs.length,\n      source: 'demo',\n      step: 'job_collection'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "generate_demo_jobs",
+      "name": "Generate Demo Jobs",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process Apify results\nconst items = [];\n\nfor (const item of $input.all()) {\n  let jobs = [];\n  \n  // Check if we have Apify results\n  if (Array.isArray(item.json)) {\n    // Direct array response from Apify\n    jobs = item.json.map(job => ({\n      titulo: job.title || job.position || '',\n      empresa: job.company || job.companyName || '',\n      localizacao: job.location || '',\n      descricao: job.description || '',\n      url: job.url || job.link || '',\n      data_publicacao: job.postedAt || job.publishedAt || new Date().toISOString(),\n      fonte: 'LinkedIn via Apify'\n    }));\n  } else if (item.json.error) {\n    // Apify error - will use demo data instead\n    console.error('Apify error:', item.json.error);\n  }\n  \n  // Get original data from before the split\n  const originalData = $node[\"split_combinations\"].context?.item?.json || item.json;\n  \n  items.push({\n    json: {\n      ...originalData,\n      collectedJobs: jobs,\n      totalJobsCollected: jobs.length,\n      source: jobs.length > 0 ? 'apify' : 'error',\n      step: 'job_collection'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "process_apify_results",
+      "name": "Process Apify Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1850, 200]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "multiplex",
+        "options": {}
+      },
+      "id": "merge_job_sources",
+      "name": "Merge Job Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Aggregate all collected jobs\nconst allJobs = [];\nconst collectionId = $items[0].json.collectionId;\nconst totalVagasDesejadas = $items[0].json.totalVagasDesejadas;\n\n// Collect all jobs from all batches\nfor (const item of $input.all()) {\n  if (item.json.collectedJobs && Array.isArray(item.json.collectedJobs)) {\n    allJobs.push(...item.json.collectedJobs);\n  }\n}\n\n// Remove duplicates based on URL\nconst uniqueJobs = [];\nconst seenUrls = new Set();\n\nfor (const job of allJobs) {\n  if (!seenUrls.has(job.url)) {\n    seenUrls.add(job.url);\n    uniqueJobs.push(job);\n  }\n}\n\n// Limit to requested amount\nconst finalJobs = uniqueJobs.slice(0, totalVagasDesejadas);\n\n// Return aggregated data\nreturn [{\n  json: {\n    collectionId,\n    totalJobsCollected: finalJobs.length,\n    totalVagasDesejadas,\n    jobs: finalJobs,\n    timestamp: new Date().toISOString(),\n    step: 'job_aggregation'\n  }\n}];"
+      },
+      "id": "aggregate_jobs",
+      "name": "Aggregate Jobs",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract keywords from job descriptions\nconst items = [];\n\nfor (const item of $input.all()) {\n  const jobs = item.json.jobs || [];\n  const keywordMap = new Map();\n  \n  // Categories for classification\n  const categories = {\n    tecnicas: [\n      // Programming languages\n      'javascript', 'python', 'java', 'c#', 'c++', 'ruby', 'php', 'swift', 'kotlin', 'go', 'rust', 'typescript', 'scala',\n      // Frameworks and libraries\n      'react', 'angular', 'vue', 'node.js', 'django', 'flask', 'spring', 'laravel', 'rails', 'express', '.net', 'nextjs',\n      // Databases\n      'sql', 'mysql', 'postgresql', 'mongodb', 'redis', 'elasticsearch', 'cassandra', 'dynamodb',\n      // Cloud and DevOps\n      'aws', 'azure', 'gcp', 'docker', 'kubernetes', 'jenkins', 'ci/cd', 'terraform', 'ansible',\n      // Methodologies\n      'agile', 'scrum', 'kanban', 'devops', 'tdd', 'microservices', 'rest', 'graphql', 'api'\n    ],\n    comportamentais: [\n      'liderança', 'comunicação', 'trabalho em equipe', 'proatividade', 'organização', 'criatividade',\n      'resolução de problemas', 'pensamento crítico', 'adaptabilidade', 'resiliência', 'empatia',\n      'negociação', 'apresentação', 'mentoria', 'colaboração', 'flexibilidade', 'autonomia',\n      'leadership', 'communication', 'teamwork', 'problem solving', 'critical thinking'\n    ],\n    digitais: [\n      'excel', 'word', 'powerpoint', 'google sheets', 'slack', 'teams', 'zoom', 'jira', 'confluence',\n      'trello', 'asana', 'notion', 'figma', 'photoshop', 'illustrator', 'canva', 'miro', 'github',\n      'gitlab', 'bitbucket', 'vscode', 'intellij', 'postman', 'insomnia'\n    ]\n  };\n  \n  // Process each job description\n  jobs.forEach(job => {\n    const text = (job.descricao || '').toLowerCase();\n    \n    // Extract keywords from each category\n    Object.entries(categories).forEach(([category, keywords]) => {\n      keywords.forEach(keyword => {\n        // Use word boundaries for accurate matching\n        const regex = new RegExp(`\\\\b${keyword.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\\\b`, 'gi');\n        const matches = text.match(regex);\n        \n        if (matches) {\n          const key = `${keyword}|${category}`;\n          if (!keywordMap.has(key)) {\n            keywordMap.set(key, {\n              termo: keyword,\n              categoria: category,\n              frequencia: 0,\n              vagas: []\n            });\n          }\n          \n          const keywordData = keywordMap.get(key);\n          keywordData.frequencia++;\n          keywordData.vagas.push(job.titulo);\n        }\n      });\n    });\n    \n    // Extract additional keywords using patterns\n    // Years of experience\n    const expPattern = /\\b(\\d+)\\s*\\+?\\s*(anos?|years?)\\s*(de)?\\s*experiência/gi;\n    const expMatches = text.match(expPattern);\n    if (expMatches) {\n      const key = 'experiência|requisito';\n      if (!keywordMap.has(key)) {\n        keywordMap.set(key, {\n          termo: 'experiência',\n          categoria: 'requisito',\n          frequencia: 0,\n          detalhes: [],\n          vagas: []\n        });\n      }\n      keywordMap.get(key).frequencia++;\n      keywordMap.get(key).vagas.push(job.titulo);\n    }\n    \n    // Education level\n    const educationTerms = ['graduação', 'superior completo', 'pós-graduação', 'mestrado', 'mba', 'doutorado', 'técnico'];\n    educationTerms.forEach(term => {\n      if (text.includes(term)) {\n        const key = `${term}|formacao`;\n        if (!keywordMap.has(key)) {\n          keywordMap.set(key, {\n            termo: term,\n            categoria: 'formacao',\n            frequencia: 0,\n            vagas: []\n          });\n        }\n        keywordMap.get(key).frequencia++;\n        keywordMap.get(key).vagas.push(job.titulo);\n      }\n    });\n    \n    // Languages\n    const languages = ['inglês', 'espanhol', 'francês', 'alemão', 'mandarim', 'english', 'spanish'];\n    languages.forEach(lang => {\n      if (text.includes(lang)) {\n        const key = `${lang}|idioma`;\n        if (!keywordMap.has(key)) {\n          keywordMap.set(key, {\n            termo: lang,\n            categoria: 'idioma',\n            frequencia: 0,\n            vagas: []\n          });\n        }\n        keywordMap.get(key).frequencia++;\n        keywordMap.get(key).vagas.push(job.titulo);\n      }\n    });\n  });\n  \n  // Convert map to array and calculate percentages\n  const totalJobs = jobs.length;\n  const keywordsArray = Array.from(keywordMap.values()).map(kw => ({\n    ...kw,\n    frequencia_percentual: totalJobs > 0 ? (kw.frequencia / totalJobs) * 100 : 0,\n    vagas: [...new Set(kw.vagas)] // Remove duplicate job titles\n  }));\n  \n  // Sort by frequency\n  keywordsArray.sort((a, b) => b.frequencia - a.frequencia);\n  \n  items.push({\n    json: {\n      ...item.json,\n      extractedKeywords: keywordsArray,\n      totalKeywordsFound: keywordsArray.length,\n      step: 'keyword_extraction'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "extract_keywords",
+      "name": "Extract Keywords",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Prepare keywords for AI validation\nconst items = [];\n\nfor (const item of $input.all()) {\n  const keywords = item.json.extractedKeywords || [];\n  const cargoObjetivo = item.json.cargoObjetivo;\n  const areaInteresse = item.json.areaInteresse;\n  \n  // Group keywords by category\n  const groupedKeywords = {\n    tecnicas: keywords.filter(k => k.categoria === 'tecnicas'),\n    comportamentais: keywords.filter(k => k.categoria === 'comportamentais'),\n    digitais: keywords.filter(k => k.categoria === 'digitais'),\n    outras: keywords.filter(k => !['tecnicas', 'comportamentais', 'digitais'].includes(k.categoria))\n  };\n  \n  // Create AI validation prompt\n  const aiPrompt = `Analise as seguintes palavras-chave extraídas de ${item.json.totalJobsCollected} vagas para o cargo de \"${cargoObjetivo}\" na área de \"${areaInteresse}\".\n\nPALAVRAS-CHAVE ENCONTRADAS:\n${JSON.stringify(groupedKeywords, null, 2)}\n\nTAREFAS:\n1. Valide a relevância de cada palavra-chave para o cargo\n2. Identifique palavras-chave importantes que possam estar faltando\n3. Sugira agrupamentos ou sinônimos\n4. Classifique por ordem de importância (essencial >70%, importante 40-69%, complementar <40%)\n\nRETORNE UM JSON com:\n{\n  \"validadas\": [{\"termo\": \"...\", \"relevancia\": 0-100, \"justificativa\": \"...\"}],\n  \"sugestoes_adicionais\": [{\"termo\": \"...\", \"categoria\": \"...\", \"justificativa\": \"...\"}],\n  \"agrupamentos\": [{\"principal\": \"...\", \"sinonimos\": [\"...\", \"...\"]}],\n  \"top_10_essenciais\": [\"...\", \"...\"],\n  \"alertas\": [\"...\"]\n}`;\n  \n  items.push({\n    json: {\n      ...item.json,\n      groupedKeywords,\n      aiValidationPrompt: aiPrompt,\n      step: 'ai_preparation'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "prepare_ai_validation",
+      "name": "Prepare AI Validation",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2650, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$env.GOOGLE_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"{{$json.aiValidationPrompt}}\\n\\nIMPORTANTE: Retorne APENAS um objeto JSON válido, sem markdown ou explicações adicionais.\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.1,\n    \"maxOutputTokens\": 8000,\n    \"topP\": 0.8,\n    \"topK\": 10\n  }\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "ai_validation_gemini",
+      "name": "AI Validation - Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [2850, 300],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process AI validation and prepare final results\nconst items = [];\n\nfor (const item of $input.all()) {\n  let aiValidation = null;\n  \n  // Parse AI response\n  try {\n    if (item.json.candidates?.[0]?.content?.parts?.[0]?.text) {\n      const aiResponse = item.json.candidates[0].content.parts[0].text;\n      const cleanResponse = aiResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n      aiValidation = JSON.parse(cleanResponse);\n    }\n  } catch (error) {\n    console.error('Failed to parse AI validation:', error);\n    aiValidation = {\n      error: 'Failed to parse AI response',\n      validadas: [],\n      sugestoes_adicionais: [],\n      top_10_essenciais: []\n    };\n  }\n  \n  // Get keywords from previous step\n  const keywords = item.json.extractedKeywords || [];\n  const totalJobs = item.json.totalJobsCollected || 0;\n  \n  // Apply Carolina Martins methodology\n  const categorizadas = {\n    essenciais: keywords.filter(k => k.frequencia_percentual >= 70),\n    importantes: keywords.filter(k => k.frequencia_percentual >= 40 && k.frequencia_percentual < 70),\n    complementares: keywords.filter(k => k.frequencia_percentual < 40)\n  };\n  \n  // Get top 10 keywords\n  const top10 = keywords\n    .sort((a, b) => b.frequencia - a.frequencia)\n    .slice(0, 10)\n    .map((kw, index) => ({\n      termo: kw.termo,\n      frequencia_absoluta: kw.frequencia,\n      frequencia_percentual: kw.frequencia_percentual,\n      categoria: kw.categoria,\n      importancia: kw.frequencia_percentual >= 70 ? 1.0 : kw.frequencia_percentual >= 40 ? 0.7 : 0.4,\n      posicao: index + 1\n    }));\n  \n  // Build final response\n  const finalResponse = {\n    id: item.json.collectionId,\n    timestamp: item.json.timestamp,\n    estatisticas: {\n      totalVagas: totalJobs,\n      palavrasEncontradas: keywords.length,\n      categoriasIdentificadas: new Set(keywords.map(k => k.categoria)).size,\n      fontes: item.json.source === 'apify' ? 1 : 0,\n      metodologia_carolina_martins: {\n        fase1_total_palavras: keywords.filter(k => k.frequencia_percentual >= 40).length,\n        fase1_alvo_atingido: keywords.filter(k => k.frequencia_percentual >= 40).length >= 40,\n        fase2_top10: 10\n      }\n    },\n    palavrasChave: {\n      tecnicas: keywords.filter(k => k.categoria === 'tecnicas').map(k => ({\n        termo: k.termo,\n        frequencia: k.frequencia,\n        percentual: k.frequencia_percentual\n      })),\n      comportamentais: keywords.filter(k => k.categoria === 'comportamentais').map(k => ({\n        termo: k.termo,\n        frequencia: k.frequencia,\n        percentual: k.frequencia_percentual\n      })),\n      digitais: keywords.filter(k => k.categoria === 'digitais').map(k => ({\n        termo: k.termo,\n        frequencia: k.frequencia,\n        percentual: k.frequencia_percentual\n      }))\n    },\n    top_10_carolina_martins: top10,\n    validacaoIA: {\n      recomendacoes: aiValidation?.sugestoes_adicionais || [],\n      alertas: aiValidation?.alertas || [],\n      aprovadas: aiValidation?.validadas || [],\n      total_validadas: aiValidation?.validadas?.length || 0\n    },\n    fontes: [\n      {\n        nome: item.json.source === 'apify' ? 'LinkedIn Jobs' : 'Demo Data',\n        vagas: totalJobs,\n        taxa: 100\n      }\n    ],\n    transparencia: {\n      vagas_coletadas: item.json.jobs?.slice(0, 5) || [], // First 5 jobs as sample\n      palavras_brutas: keywords.slice(0, 20), // First 20 keywords\n      processo_extracao: {\n        metodo: 'pattern_matching',\n        categorias_analisadas: ['tecnicas', 'comportamentais', 'digitais'],\n        filtros_aplicados: ['frequencia_minima', 'relevancia_cargo']\n      },\n      logs_detalhados: [\n        `Iniciado em: ${item.json.timestamp}`,\n        `Total de vagas processadas: ${totalJobs}`,\n        `Palavras-chave encontradas: ${keywords.length}`,\n        `Fonte de dados: ${item.json.source === 'apify' ? 'LinkedIn via Apify' : 'Demo Data'}`\n      ]\n    },\n    metodologia_carolina_martins: categorizadas\n  };\n  \n  items.push({\n    json: finalResponse\n  });\n}\n\nreturn items;"
+      },
+      "id": "prepare_final_response",
+      "name": "Prepare Final Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [3050, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond_to_webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3250, 300]
+    }
+  ],
+  "connections": {
+    "webhook_receiver": {
+      "main": [
+        [
+          {
+            "node": "extract_parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_parameters": {
+      "main": [
+        [
+          {
+            "node": "query_expansion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "query_expansion": {
+      "main": [
+        [
+          {
+            "node": "location_expansion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "location_expansion": {
+      "main": [
+        [
+          {
+            "node": "create_search_combinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_search_combinations": {
+      "main": [
+        [
+          {
+            "node": "split_combinations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_combinations": {
+      "main": [
+        [
+          {
+            "node": "check_apify_token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_apify_token": {
+      "main": [
+        [
+          {
+            "node": "apify_linkedin_scraper",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "generate_demo_jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "apify_linkedin_scraper": {
+      "main": [
+        [
+          {
+            "node": "process_apify_results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process_apify_results": {
+      "main": [
+        [
+          {
+            "node": "merge_job_sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate_demo_jobs": {
+      "main": [
+        [
+          {
+            "node": "merge_job_sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "merge_job_sources": {
+      "main": [
+        [
+          {
+            "node": "split_combinations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "aggregate_jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate_jobs": {
+      "main": [
+        [
+          {
+            "node": "extract_keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_keywords": {
+      "main": [
+        [
+          {
+            "node": "prepare_ai_validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_ai_validation": {
+      "main": [
+        [
+          {
+            "node": "ai_validation_gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai_validation_gemini": {
+      "main": [
+        [
+          {
+            "node": "prepare_final_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_final_response": {
+      "main": [
+        [
+          {
+            "node": "respond_to_webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": {
+    "node:split_combinations": {
+      "lastIteration": 0
+    }
+  },
+  "tags": [
+    {
+      "name": "Carolina Martins",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "Keyword Extraction",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "LinkedIn Scraping",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "98765432-10fe-dcba-9876-543210fedcba"
+}

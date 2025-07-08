@@ -1,0 +1,429 @@
+{
+  "name": "Agent 0 - Diagnóstico Curricular (Metodologia Carol Martins)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent0-analyze-cv",
+        "responseMode": "lastNode",
+        "options": {
+          "binaryData": true,
+          "rawBody": false
+        }
+      },
+      "id": "webhook_receiver",
+      "name": "Webhook - Receive CV Analysis Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "agent0-cv-analysis"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and validate input data\nconst items = [];\n\nfor (const item of $input.all()) {\n  const newItem = {\n    json: {},\n    binary: {}\n  };\n  \n  // Handle file upload or text input\n  let cvText = '';\n  let fileName = '';\n  \n  if (item.binary && item.binary.data) {\n    // File upload case\n    fileName = item.binary.data.fileName || 'curriculum.pdf';\n    newItem.binary = item.binary;\n  } else if (item.json.cv_text) {\n    // Direct text input\n    cvText = item.json.cv_text;\n  } else {\n    throw new Error('No CV file or text provided');\n  }\n  \n  // Parse motivation and saboteurs data\n  let motivationData = {};\n  let sabotadoresData = {};\n  \n  try {\n    if (item.json.motivationData) {\n      motivationData = typeof item.json.motivationData === 'string' \n        ? JSON.parse(item.json.motivationData) \n        : item.json.motivationData;\n    }\n    if (item.json.sabotadoresData) {\n      sabotadoresData = typeof item.json.sabotadoresData === 'string' \n        ? JSON.parse(item.json.sabotadoresData) \n        : item.json.sabotadoresData;\n    }\n  } catch (error) {\n    console.error('Error parsing JSON data:', error);\n  }\n  \n  // Prepare data for next nodes\n  newItem.json = {\n    cvText,\n    fileName,\n    hasFile: !!item.binary?.data,\n    motivationData,\n    sabotadoresData,\n    timestamp: new Date().toISOString(),\n    analysisId: `cv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`\n  };\n  \n  items.push(newItem);\n}\n\nreturn items;"
+      },
+      "id": "extract_input_data",
+      "name": "Extract Input Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.hasFile}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check_file_upload",
+      "name": "Has File Upload?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.convertio.co/convert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_CONVERTIO_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$binary.data}}"
+            },
+            {
+              "name": "format",
+              "value": "txt"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract_pdf_text",
+      "name": "Extract Text from PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process extracted text or use direct input\nconst items = [];\n\nfor (const item of $input.all()) {\n  let cvText = '';\n  \n  // Get text from PDF extraction or direct input\n  if (item.json.extractedText) {\n    cvText = item.json.extractedText;\n  } else if (item.json.cvText) {\n    cvText = item.json.cvText;\n  } else {\n    throw new Error('No CV text available');\n  }\n  \n  // Validate minimum text length\n  if (cvText.length < 500) {\n    throw new Error('CV text too short. Minimum 500 characters required.');\n  }\n  \n  // Extract keywords from motivation data\n  const keywords = [];\n  const motivation = item.json.motivationData || {};\n  \n  if (motivation.cargoObjetivo) {\n    keywords.push(...motivation.cargoObjetivo.split(/[,\\s]+/).filter(k => k.length > 2));\n  }\n  if (motivation.empresaSonho) {\n    keywords.push(...motivation.empresaSonho.split(/[,\\s]+/).filter(k => k.length > 2));\n  }\n  if (motivation.valoresImportantes) {\n    keywords.push(...motivation.valoresImportantes);\n  }\n  \n  // Prepare AI analysis prompt\n  const analysisPrompt = `Analise o seguinte currículo seguindo a metodologia Carolina Martins.\n\nCargo objetivo: ${motivation.cargoObjetivo || 'Não especificado'}\nPalavras-chave relevantes: ${keywords.join(', ')}\n\nCURRÍCULO:\n${cvText}\n\nRETORNE UM JSON COM:\n1. Elementos da metodologia presentes (dados_pessoais, objetivo_profissional, resumo_executivo, etc.)\n2. Validações de honestidade (datas consistentes, informações verificáveis, etc.)\n3. Palavras-chave identificadas\n4. Score de 0 a 100\n5. Recomendações para melhorias`;\n  \n  items.push({\n    json: {\n      ...item.json,\n      cvText,\n      cvLength: cvText.length,\n      analysisPrompt,\n      extractedKeywords: keywords\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "prepare_ai_analysis",
+      "name": "Prepare AI Analysis",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "resource": "assistant",
+        "assistantId": "={{ $env.OPENAI_ASSISTANT_ID || 'asst_default' }}",
+        "text": "={{$json.analysisPrompt}}",
+        "options": {
+          "temperature": 0.1,
+          "maxTokens": 4000
+        }
+      },
+      "id": "ai_analysis_openai",
+      "name": "AI Analysis - OpenAI",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{$env.GOOGLE_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"{{$json.analysisPrompt}}\\n\\nIMPORTANTE: Retorne APENAS um objeto JSON válido, sem markdown ou explicações adicionais.\"\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.1,\n    \"maxOutputTokens\": 4000,\n    \"topP\": 0.8,\n    \"topK\": 10\n  }\n}",
+        "options": {}
+      },
+      "id": "ai_analysis_gemini",
+      "name": "AI Analysis - Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 300],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-3-sonnet-20240229\",\n  \"max_tokens\": 4000,\n  \"temperature\": 0.1,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.analysisPrompt}}\\n\\nIMPORTANTE: Retorne APENAS um objeto JSON válido, sem markdown ou explicações adicionais.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ai_analysis_claude",
+      "name": "AI Analysis - Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 400],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "functionCode": "// Select best AI response and parse results\nconst items = [];\n\nfor (const item of $input.all()) {\n  let aiResponse = null;\n  let aiProvider = 'none';\n  \n  // Try to get response from different AI providers\n  const inputs = $input.all();\n  \n  // Check Gemini response first (preferred)\n  const geminiInput = inputs.find(i => i.json.candidates);\n  if (geminiInput?.json?.candidates?.[0]?.content?.parts?.[0]?.text) {\n    aiResponse = geminiInput.json.candidates[0].content.parts[0].text;\n    aiProvider = 'gemini';\n  }\n  \n  // Check Claude response\n  if (!aiResponse) {\n    const claudeInput = inputs.find(i => i.json.content);\n    if (claudeInput?.json?.content?.[0]?.text) {\n      aiResponse = claudeInput.json.content[0].text;\n      aiProvider = 'claude';\n    }\n  }\n  \n  // Check OpenAI response\n  if (!aiResponse) {\n    const openaiInput = inputs.find(i => i.json.choices);\n    if (openaiInput?.json?.choices?.[0]?.message?.content) {\n      aiResponse = openaiInput.json.choices[0].message.content;\n      aiProvider = 'openai';\n    }\n  }\n  \n  if (!aiResponse) {\n    throw new Error('No AI response received from any provider');\n  }\n  \n  // Parse AI response\n  let analysisResult;\n  try {\n    // Clean response (remove markdown if present)\n    const cleanResponse = aiResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n    analysisResult = JSON.parse(cleanResponse);\n  } catch (error) {\n    console.error('Failed to parse AI response:', error);\n    analysisResult = {\n      error: 'Failed to parse AI response',\n      rawResponse: aiResponse\n    };\n  }\n  \n  // Apply Carolina Martins methodology scoring\n  const metodologiaElementos = [\n    'dados_pessoais',\n    'objetivo_profissional',\n    'resumo_executivo',\n    'experiencias',\n    'resultados_quantificados',\n    'formacao',\n    'idiomas',\n    'competencias_tecnicas',\n    'outros_conhecimentos',\n    'trabalho_voluntario'\n  ];\n  \n  let elementosPresentes = 0;\n  const elementos = [];\n  \n  for (const elemento of metodologiaElementos) {\n    const presente = analysisResult.elementos_metodologia?.includes(elemento) || false;\n    if (presente) elementosPresentes++;\n    elementos.push({\n      nome: elemento,\n      presente\n    });\n  }\n  \n  // Calculate final score\n  const baseScore = (elementosPresentes / metodologiaElementos.length) * 100;\n  const penalizacoes = analysisResult.penalizacoes || 0;\n  const finalScore = Math.max(0, Math.round(baseScore - penalizacoes));\n  \n  // Build final response\n  const finalResult = {\n    id: item.json.analysisId,\n    timestamp: item.json.timestamp,\n    score: finalScore,\n    aiProvider,\n    estrutura: {\n      presentes: elementosPresentes,\n      total: metodologiaElementos.length,\n      elementos\n    },\n    honestidade: {\n      validacoes: analysisResult.validacoes_honestidade || [],\n      alertas: analysisResult.alertas || []\n    },\n    palavrasChave: analysisResult.palavras_chave || item.json.extractedKeywords || [],\n    motivacaoUsuario: item.json.motivationData || {},\n    sabotadoresIdentificados: item.json.sabotadoresData?.sabotadoresIdentificados || [],\n    caminho_para_100: {\n      score_atual: finalScore,\n      total_penalizacoes: penalizacoes,\n      penalizacoes_detalhadas: analysisResult.penalizacoes_detalhadas || [],\n      recomendacoes: analysisResult.recomendacoes || []\n    },\n    metadata: {\n      cvLength: item.json.cvLength,\n      aiProvider,\n      processingTime: new Date().toISOString()\n    }\n  };\n  \n  items.push({\n    json: finalResult\n  });\n}\n\nreturn items;"
+      },
+      "id": "process_ai_response",
+      "name": "Process AI Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "response.status",
+              "value": "success"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format_success_response",
+      "name": "Format Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "response.status",
+              "value": "error"
+            },
+            {
+              "name": "response.message",
+              "value": "={{$json.error.message || 'Unknown error occurred'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format_error_response",
+      "name": "Format Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1650, 500]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "id",
+              "field2": "id"
+            }
+          ]
+        },
+        "joinMode": "keepMatches",
+        "outputDataFrom": "both"
+      },
+      "id": "merge_responses",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond_webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2050, 300]
+    }
+  ],
+  "connections": {
+    "webhook_receiver": {
+      "main": [
+        [
+          {
+            "node": "extract_input_data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_input_data": {
+      "main": [
+        [
+          {
+            "node": "check_file_upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_file_upload": {
+      "main": [
+        [
+          {
+            "node": "extract_pdf_text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "prepare_ai_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_pdf_text": {
+      "main": [
+        [
+          {
+            "node": "prepare_ai_analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_ai_analysis": {
+      "main": [
+        [
+          {
+            "node": "ai_analysis_gemini",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ai_analysis_claude",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ai_analysis_openai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai_analysis_gemini": {
+      "main": [
+        [
+          {
+            "node": "process_ai_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai_analysis_claude": {
+      "main": [
+        [
+          {
+            "node": "process_ai_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai_analysis_openai": {
+      "main": [
+        [
+          {
+            "node": "process_ai_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process_ai_response": {
+      "main": [
+        [
+          {
+            "node": "format_success_response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "format_error_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format_success_response": {
+      "main": [
+        [
+          {
+            "node": "merge_responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format_error_response": {
+      "main": [
+        [
+          {
+            "node": "merge_responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "merge_responses": {
+      "main": [
+        [
+          {
+            "node": "respond_webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Carolina Martins",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "CV Analysis",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "01234567-89ab-cdef-0123-456789abcdef"
+}

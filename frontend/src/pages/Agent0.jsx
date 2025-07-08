@@ -855,7 +855,7 @@ const Agent0 = () => {
         setCurrentStep(2) // Processando texto
         
         // Chamar API real do backend
-        const response = await fetch('config.endpoints.agent0.analyzeCV', {
+        const response = await fetch(config.endpoints.agent0.analyzeCV, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -882,7 +882,7 @@ const Agent0 = () => {
       // Para arquivo, usar FormData
       setCurrentStep(2)
       
-      const response = await fetch('config.endpoints.agent0.analyzeCV', {
+      const response = await fetch(config.endpoints.agent0.analyzeCV, {
         method: 'POST',
         body: formData
       })
