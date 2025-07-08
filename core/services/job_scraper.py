@@ -292,3 +292,58 @@ class JobScraper:
                 vagas_unicas.append(vaga)
         
         return vagas_unicas
+    
+    def iniciar_coleta_streaming(self, area_interesse: str, cargo_objetivo: str, localizacao: str, total_vagas_desejadas: int = 800) -> tuple:
+        """
+        Inicia coleta via Apify para streaming em tempo real
+        Retorna (run_id, dataset_id) para polling posterior
+        """
+        
+        if not self.scraper.apify_token:
+            logger.warning("⚠️ Apify não configurado para streaming")
+            return None, None
+        
+        try:
+            # Gerar combinações de busca
+            query_expanded = self.query_expander.expandir_consulta(cargo_objetivo, area_interesse, max_combinacoes=3)
+            localizacoes_priorizadas = self.location_expander.expandir_localizacao(localizacao, max_localizacoes=5)
+            
+            # Use a primeira combinação mais promissora para streaming
+            cargo_principal = query_expanded[0] if query_expanded else cargo_objetivo
+            local_principal = localizacoes_priorizadas[0] if localizacoes_priorizadas else localizacao
+            
+            logger.info(f"🚀 Iniciando streaming: {cargo_principal} em {local_principal}")
+            
+            # Iniciar execução no Apify e retornar IDs
+            run_id, dataset_id = self.scraper.iniciar_execucao_apify(cargo_principal, local_principal, total_vagas_desejadas)
+            
+            return run_id, dataset_id
+            
+        except Exception as e:
+            logger.error(f"Erro ao iniciar streaming: {e}")
+            return None, None
+    
+    def verificar_status_run(self, run_id: str) -> str:
+        """
+        Verifica status de um run do Apify
+        Retorna: RUNNING, SUCCEEDED, FAILED, etc.
+        """
+        return self.scraper.verificar_status_run(run_id)
+    
+    def contar_resultados_dataset(self, dataset_id: str) -> int:
+        """
+        Conta quantos resultados estão atualmente no dataset
+        """
+        return self.scraper.contar_resultados_dataset(dataset_id)
+    
+    def obter_resultados_parciais(self, dataset_id: str, offset: int, limit: int) -> List[Dict]:
+        """
+        Obtém resultados parciais do dataset (apenas novos)
+        """
+        return self.scraper.obter_resultados_parciais(dataset_id, offset, limit)
+    
+    def obter_todos_resultados(self, dataset_id: str) -> List[Dict]:
+        """
+        Obtém todos os resultados finais do dataset
+        """
+        return self.scraper.obter_todos_resultados(dataset_id)

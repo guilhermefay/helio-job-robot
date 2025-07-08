@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import config from '../config'
 import {
@@ -888,6 +888,348 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
+const ProgressTimer = ({ isActive, maxMinutes = 7 }) => {
+  const [timeElapsed, setTimeElapsed] = useState(0)
+  const [progress, setProgress] = useState(0)
+  
+  useEffect(() => {
+    if (!isActive) {
+      setTimeElapsed(0)
+      setProgress(0)
+      return
+    }
+    
+    const interval = setInterval(() => {
+      setTimeElapsed(prev => {
+        const newTime = prev + 1
+        const progressPercent = Math.min((newTime / (maxMinutes * 60)) * 100, 100)
+        setProgress(progressPercent)
+        return newTime
+      })
+    }, 1000)
+    
+    return () => clearInterval(interval)
+  }, [isActive, maxMinutes])
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+  
+  if (!isActive) return null
+  
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-4">
+      <div className="flex items-start space-x-4">
+        <div className="flex-shrink-0">
+          <div className="relative w-16 h-16">
+            <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="#E5E7EB"
+                strokeWidth="8"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="#3B82F6"
+                strokeWidth="8"
+                strokeDasharray={`${2 * Math.PI * 45}`}
+                strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
+                strokeLinecap="round"
+                className="transition-all duration-1000 ease-out"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-sm font-bold text-blue-600">
+                {formatTime(timeElapsed)}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex-1">
+          <h4 className="text-lg font-semibold text-blue-900 mb-2">
+            🚀 Buscando vagas no LinkedIn via Apify...
+          </h4>
+          <p className="text-sm text-blue-700 mb-3">
+            <strong>Tempo estimado:</strong> 5-7 minutos para buscar até 20.000 vagas
+          </p>
+          
+          <div className="space-y-2 text-sm text-blue-600">
+            <div className="flex items-center">
+              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span>Conectando com LinkedIn via Apify...</span>
+            </div>
+            <div className="flex items-center">
+              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span>Executando busca inteligente por "{searchConfig.cargo}" em "{searchConfig.localizacao}"</span>
+            </div>
+            <div className="flex items-center">
+              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span>Coletando informações detalhadas de cada vaga...</span>
+            </div>
+            <div className="flex items-center">
+              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+              <span>Processando dados e aplicando filtros de qualidade</span>
+            </div>
+          </div>
+          
+          <div className="mt-4 bg-white rounded-lg p-3 border border-blue-200">
+            <div className="flex justify-between text-xs text-blue-600 mb-1">
+              <span>Progresso</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full bg-blue-100 rounded-full h-2">
+              <div 
+                className="bg-blue-500 h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          {timeElapsed > 300 && ( // Após 5 minutos
+            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-700">
+                ⏳ <strong>Quase lá!</strong> O Apify está coletando muitas vagas. 
+                Isso é ótimo - significa que há muitas oportunidades para "{searchConfig.cargo}"!
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const StreamingJobCollection = ({ onJobsCollected, isVisible, onClose }) => {
+  const [status, setStatus] = useState('idle')
+  const [jobs, setJobs] = useState([])
+  const [progress, setProgress] = useState({
+    total: 0,
+    elapsed: 0,
+    message: 'Aguardando...'
+  })
+  const [eventSource, setEventSource] = useState(null)
+
+  const startStreaming = async (formData) => {
+    setStatus('connecting')
+    setJobs([])
+    setProgress({ total: 0, elapsed: 0, message: '🚀 Conectando...' })
+    
+    try {
+      // Iniciar streaming via EventSource
+      const es = new EventSource(`${config.API_URL}/api/agent1/collect-jobs-stream`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      // Enviar dados via POST separado (EventSource não suporta POST body)
+      await fetch(`${config.API_URL}/api/agent1/collect-jobs-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': window.location.origin
+        },
+        body: JSON.stringify(formData)
+      })
+      
+      es.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          
+          if (data.type === 'nova_vaga') {
+            // Nova vaga coletada
+            setJobs(prev => [...prev, data.vaga])
+            setProgress(prev => ({ 
+              ...prev, 
+              total: data.total,
+              message: `📊 ${data.total} vagas coletadas...`
+            }))
+          } else if (data.status) {
+            // Update de status
+            setStatus(data.status)
+            setProgress(prev => ({
+              ...prev,
+              elapsed: data.elapsed_seconds || prev.elapsed,
+              total: data.total_vagas || prev.total,
+              message: data.message
+            }))
+            
+            if (data.status === 'concluido' || data.status === 'finalizado') {
+              // Coleta finalizada
+              if (data.vagas) {
+                setJobs(data.vagas)
+              }
+              onJobsCollected(jobs.length > 0 ? jobs : data.vagas || [])
+              es.close()
+              setEventSource(null)
+            } else if (data.status === 'erro') {
+              setStatus('error')
+              es.close()
+              setEventSource(null)
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao processar evento:', err)
+        }
+      }
+      
+      es.onerror = (error) => {
+        console.error('Erro no EventSource:', error)
+        setStatus('error')
+        setProgress(prev => ({ ...prev, message: '❌ Erro na conexão' }))
+        es.close()
+        setEventSource(null)
+      }
+      
+      setEventSource(es)
+      
+    } catch (error) {
+      console.error('Erro ao iniciar streaming:', error)
+      setStatus('error')
+      setProgress(prev => ({ ...prev, message: '❌ Erro ao conectar' }))
+    }
+  }
+  
+  const stopStreaming = () => {
+    if (eventSource) {
+      eventSource.close()
+      setEventSource(null)
+    }
+    setStatus('stopped')
+    onClose()
+  }
+  
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+  
+  if (!isVisible) return null
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold">🚀 Coleta em Tempo Real</h3>
+          <button 
+            onClick={stopStreaming}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {/* Progress Info */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium">{progress.message}</span>
+            <span className="text-sm text-gray-500">
+              {progress.elapsed > 0 && `⏱️ ${formatTime(progress.elapsed)}`}
+            </span>
+          </div>
+          
+          {/* Progress Bar */}
+          {status === 'executando' && (
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.min((progress.elapsed / 420) * 100, 100)}%` }}
+              />
+            </div>
+          )}
+          
+          {/* Stats */}
+          <div className="flex justify-between mt-2 text-sm text-gray-600">
+            <span>📊 Vagas coletadas: {progress.total}</span>
+            <span>🎯 Estimativa: 5-7 minutos</span>
+          </div>
+        </div>
+        
+        {/* Jobs Table */}
+        <div className="overflow-y-auto max-h-96">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 sticky top-0">
+              <tr>
+                <th className="p-2 text-left">#</th>
+                <th className="p-2 text-left">Cargo</th>
+                <th className="p-2 text-left">Empresa</th>
+                <th className="p-2 text-left">Local</th>
+                <th className="p-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job, index) => (
+                <tr key={index} className="border-b hover:bg-gray-50 animate-fade-in">
+                  <td className="p-2">{index + 1}</td>
+                  <td className="p-2 font-medium">{job.titulo}</td>
+                  <td className="p-2">{job.empresa}</td>
+                  <td className="p-2">{job.localizacao}</td>
+                  <td className="p-2">
+                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                      ✅ Coletada
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              
+              {status === 'executando' && (
+                <tr>
+                  <td colSpan="5" className="p-4 text-center text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+                      <span>Aguardando mais vagas...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Actions */}
+        <div className="mt-4 flex justify-between">
+          <div className="text-sm text-gray-500">
+            {status === 'concluido' && '✅ Coleta finalizada!'}
+            {status === 'error' && '❌ Erro na coleta'}
+            {status === 'executando' && '⏳ Coletando...'}
+          </div>
+          
+          <div className="space-x-2">
+            {status === 'executando' && (
+              <button
+                onClick={stopStreaming}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                🛑 Parar Coleta
+              </button>
+            )}
+            
+            {(status === 'concluido' || status === 'finalizado') && (
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                ✅ Usar Resultados
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Main Component
 const Agent1 = () => {
   const [searchConfig, setSearchConfig] = useState({
@@ -1230,16 +1572,76 @@ const Agent1 = () => {
     !isProcessing
   )
 
+  // Handlers para Streaming  
+  const handleStartStreaming = () => {
+    console.log('🚀 Iniciando streaming...')
+    
+    // Validações
+    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
+      setError('Por favor, preencha todos os campos obrigatórios.')
+      return
+    }
+    
+    const requestData = {
+      area_interesse: searchConfig.area.trim(),
+      cargo_objetivo: searchConfig.cargo.trim(), 
+      localizacao: searchConfig.localizacao.trim(),
+      total_vagas_desejadas: searchConfig.quantidade,
+      tipo_contrato: 'CLT'
+    }
+    
+    console.log('📊 Dados para streaming:', requestData)
+    
+         setIsProcessing(true)
+     setError(null)
+     setResults(null)
+     setCollectionData(null)
+     setIsStreamActive(true)
+     setStreamRequestData(requestData)
+   }
+  
+  const handleStreamCompleteNew = (jobs) => {
+    console.log('✅ Streaming completo!', jobs.length, 'vagas')
+    
+    // Criar dados compatíveis com o formato esperado
+    const collectionResult = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      estatisticas: {
+        totalVagas: jobs.length,
+        fontes: [{
+          nome: 'LinkedIn Jobs (Streaming)',
+          vagas: jobs.length,
+          taxa: 95
+        }]
+      },
+      vagas: jobs,
+      demo_mode: false
+    }
+    
+    setCollectionData(collectionResult)
+    setIsStreamActive(false)
+    setIsProcessing(false)
+    
+    console.log(`✅ ${jobs.length} vagas coletadas via streaming!`)
+  }
+  
+  const handleStreamErrorNew = () => {
+    console.log('❌ Erro no streaming')
+    setError('Erro na coleta via streaming. Tente novamente.')
+    setIsStreamActive(false)
+    setIsProcessing(false)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
       {/* Progress Stream Modal */}
-      <ProgressStream 
-        isActive={isStreamActive}
-        onComplete={handleStreamComplete}
-        onError={handleStreamError}
-        requestData={streamRequestData}
+      <StreamingJobCollection 
+        isVisible={isStreamActive}
+        onJobsCollected={handleStreamComplete}
+        onClose={handleStreamError}
       />
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1278,9 +1680,9 @@ const Agent1 = () => {
         {!results && !collectionData ? (
           /* Configuration Section */
           <div className="space-y-6">
-                          <SearchConfiguration
-                config={searchConfig}
-                onChange={setSearchConfig}
+            <SearchConfiguration
+              config={searchConfig}
+              onChange={setSearchConfig}
               disabled={isProcessing}
             />
 
@@ -1311,39 +1713,6 @@ const Agent1 = () => {
                   </>
                 )}
               </button>
-              
-              {/* Loading Warning */}
-              {isProcessing && (
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <ClockIcon className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-blue-800">Coletando vagas reais...</h4>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Tempo estimado:
-                        {searchConfig.quantidade <= 50 && ' 1-2 minutos'}
-                        {searchConfig.quantidade > 50 && searchConfig.quantidade <= 100 && ' 2-3 minutos'}
-                        {searchConfig.quantidade > 100 && searchConfig.quantidade <= 200 && ' 3-5 minutos'}
-                        {searchConfig.quantidade > 200 && ' 5-10 minutos (grande volume)'}
-                      </p>
-                      <div className="mt-2">
-                        <div className="flex items-center text-xs text-blue-600">
-                          <div className="animate-pulse mr-2">●</div>
-                          <span>Buscando {searchConfig.quantidade} vagas do LinkedIn via Apify</span>
-                        </div>
-                        <div className="flex items-center text-xs text-blue-600 mt-1">
-                          <div className="animate-pulse mr-2">●</div>
-                          <span>Processando descrições completas das vagas</span>
-                        </div>
-                        <div className="flex items-center text-xs text-blue-600 mt-1">
-                          <div className="animate-pulse mr-2">●</div>
-                          <span>Organizando dados para análise</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         ) : collectionData && !results ? (

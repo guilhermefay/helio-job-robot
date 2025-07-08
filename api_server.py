@@ -542,143 +542,101 @@ def collect_keywords():
         logger.error(f"Erro na coleta de palavras-chave: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
-@app.route('/api/agent1/collect-keywords-stream', methods=['POST'])
-def collect_keywords_stream():
-    """Endpoint com streaming de progresso para coleta de palavras-chave"""
-    data = request.json
+@app.route('/api/agent1/collect-keywords-stream', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def collect_jobs_stream():
+    """
+    Endpoint de streaming que coleta vagas em tempo real via Apify
+    Retorna resultados progressivamente usando Server-Sent Events (SSE)
+    """
     
-    def generate():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    def generate_stream():
         try:
-            # Validar dados
+            data = request.get_json()
+            logger.info(f"🚀 Iniciando coleta streaming: {data}")
+            
+            # Validações básicas
             required_fields = ['area_interesse', 'cargo_objetivo', 'localizacao', 'total_vagas_desejadas']
             for field in required_fields:
-                if field not in data or not data[field]:
+                if not data.get(field):
                     yield f"data: {json.dumps({'error': f'Campo obrigatório: {field}'})}\n\n"
                     return
             
-            collection_id = str(uuid.uuid4())
+            # Inicia a coleta via scraper
+            scraper = JobScraper()
             
-            # Preparar parâmetros
-            params = {
-                'area_interesse': data['area_interesse'],
-                'cargo_objetivo': data['cargo_objetivo'], 
-                'localizacao': data['localizacao'],
-                'total_vagas_desejadas': int(data['total_vagas_desejadas']),
-                'segmentos_alvo': data.get('segmentos_alvo', []),
-                'user_id': 1
-            }
+            # Inicia a execução no Apify
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': '🚀 Iniciando busca no LinkedIn...', 'timestamp': datetime.now().isoformat()})}\n\n"
             
-            # 1. Iniciando coleta
-            yield f"data: {json.dumps({'status': 'iniciando', 'message': 'Iniciando coleta de vagas...', 'progress': 0})}\n\n"
-            
-            # 2. Coletando vagas com progresso simulado
-            cargo = params["cargo_objetivo"]
-            yield f"data: {json.dumps({'status': 'coletando', 'message': f'Buscando vagas de {cargo}...', 'progress': 10})}\n\n"
-            
-            # Extrair tipo de vaga
-            tipo_vaga = data.get('tipo_vaga', 'hibrido')
-            
-            # Coletar vagas reais com nova arquitetura
-            vagas_coletadas, metadados_coleta = job_scraper.coletar_vagas_multiplas_fontes(
-                area_interesse=params['area_interesse'],
-                cargo_objetivo=params['cargo_objetivo'],
-                localizacao=params['localizacao'],
-                tipo_vaga=tipo_vaga,
-                total_vagas_desejadas=params['total_vagas_desejadas']
+            # Executa a coleta (modificada para retornar run_id)
+            run_id, dataset_id = scraper.iniciar_coleta_streaming(
+                area_interesse=data['area_interesse'],
+                cargo_objetivo=data['cargo_objetivo'], 
+                localizacao=data['localizacao'],
+                total_vagas_desejadas=data.get('total_vagas_desejadas', 800)
             )
             
-            total_vagas = len(vagas_coletadas)
-            yield f"data: {json.dumps({'status': 'vagas_coletadas', 'message': f'{total_vagas} vagas coletadas!', 'progress': 40})}\n\n"
-            
-            # 3. Processando com IA
-            yield f"data: {json.dumps({'status': 'processando_ia', 'message': 'Analisando vagas com IA (30-60 segundos)...', 'progress': 50})}\n\n"
-            
-            # Usar novo extrator IA (sem callback pois não funciona com yield)
-            resultado_ia = asyncio.run(ai_keyword_extractor.extrair_palavras_chave_ia(
-                vagas_coletadas,
-                params['cargo_objetivo'],
-                params['area_interesse'],
-                None  # Sem callback no streaming
-            ))
-            
-            yield f"data: {json.dumps({'status': 'finalizando', 'message': 'Preparando resultados...', 'progress': 90})}\n\n"
-            
-            # Processar resultado final
-            resultado_final = {
-                'id': collection_id,
-                'timestamp': datetime.now().isoformat(),
-                'estatisticas': {
-                    'totalVagas': len(vagas_coletadas),
-                    'palavrasEncontradas': resultado_ia.get('analise_metadados', {}).get('total_palavras_unicas', 0),
-                    'categoriasIdentificadas': 3,  # Técnicas, Ferramentas, Comportamentais
-                    'fontes': len(set(v.get('fonte', 'unknown') for v in vagas_coletadas)),
-                    'metodologia_carolina_martins': {
-                        'fase1_total_palavras': resultado_ia.get('analise_metadados', {}).get('total_palavras_unicas', 0),
-                        'fase2_top10': len(resultado_ia.get('top_10_carolina_martins', []))
-                    }
-                },
-                'palavrasChave': {
-                    'top10': resultado_ia.get('top_10_carolina_martins', []),
-                    'mpc_completo': resultado_ia.get('mpc_completo', {})
-                },
-                'top_10_carolina_martins': resultado_ia.get('top_10_carolina_martins', []),
-                'insights': resultado_ia.get('insights_adicionais', {}),
-                'modelo_usado': resultado_ia.get('analise_metadados', {}).get('modelo_ia_usado', 'gemini-2.5-pro'),
-                'validacaoIA': {
-                    'recomendacoes': resultado_ia.get('insights_adicionais', {}).get('recomendacoes', []),
-                    'alertas': []
-                },
-                'fontes': [],  # Será preenchido abaixo
-                'transparencia': {
-                    'vagas_coletadas': vagas_coletadas[:10],  # Limitar para não sobrecarregar
-                    'logs_detalhados': [
-                        f"🎯 Iniciando coleta para: {params['cargo_objetivo']} em {params['area_interesse']}",
-                        f"📊 Meta de coleta: {params['total_vagas_desejadas']} vagas",
-                        f"✅ Coletadas: {len(vagas_coletadas)} vagas reais",
-                        f"🔤 Análise com IA: {resultado_ia.get('analise_metadados', {}).get('modelo_ia_usado', 'Gemini 2.5 Pro')}",
-                        f"📋 Palavras únicas identificadas: {resultado_ia.get('analise_metadados', {}).get('total_palavras_unicas', 0)}",
-                        f"🎯 TOP 10 palavras-chave extraídas com sucesso"
-                    ]
-                }
-            }
-            
-            # Adicionar fontes formatadas
-            fontes_utilizadas = {}
-            for vaga in vagas_coletadas:
-                fonte = vaga.get('fonte', 'unknown')
-                if fonte not in fontes_utilizadas:
-                    fontes_utilizadas[fonte] = 0
-                fontes_utilizadas[fonte] += 1
-            
-            mapeamento_fontes = {
-                'linkedin_jobs': 'LinkedIn Jobs',
-                'google_jobs': 'Google Jobs', 
-                'indeed': 'Indeed',
-                'template_metodologico': 'Dados Metodológicos',
-                'fallback': 'Dados Complementares'
-            }
-            
-            for fonte, quantidade in fontes_utilizadas.items():
-                nome_amigavel = mapeamento_fontes.get(fonte, fonte.title())
-                taxa_sucesso = 85 if 'linkedin' in fonte else 78
+            if not run_id:
+                yield f"data: {json.dumps({'error': 'Falha ao iniciar coleta no Apify'})}\n\n"
+                return
                 
-                resultado_final['fontes'].append({
-                    'nome': nome_amigavel,
-                    'vagas': quantidade,
-                    'taxa': taxa_sucesso
-                })
+            yield f"data: {json.dumps({'status': 'executando', 'run_id': run_id, 'dataset_id': dataset_id, 'message': '⚡ Coletando vagas...', 'timestamp': datetime.now().isoformat()})}\n\n"
             
-            # Armazenar resultado
-            results_store[collection_id] = resultado_final
+            # Poll dos resultados em tempo real
+            last_count = 0
+            timeout = 420  # 7 minutos
+            start_time = time.time()
             
-            # Enviar resultado final
-            yield f"data: {json.dumps({'status': 'concluido', 'message': 'Análise concluída!', 'progress': 100, 'result_id': collection_id})}\n\n"
+            while time.time() - start_time < timeout:
+                # Verifica status do run
+                status = scraper.verificar_status_run(run_id)
+                
+                # Verifica novos resultados no dataset
+                current_count = scraper.contar_resultados_dataset(dataset_id)
+                
+                # Se há novos resultados, envia para o frontend
+                if current_count > last_count:
+                    novos_resultados = scraper.obter_resultados_parciais(dataset_id, last_count, current_count)
+                    
+                    for resultado in novos_resultados:
+                        yield f"data: {json.dumps({'type': 'nova_vaga', 'vaga': resultado, 'total': current_count, 'timestamp': datetime.now().isoformat()})}\n\n"
+                    
+                    last_count = current_count
+                
+                # Status updates
+                if status == 'SUCCEEDED':
+                    yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': current_count, 'message': f'✅ Coleta concluída! {current_count} vagas encontradas', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    break
+                elif status == 'FAILED':
+                    yield f"data: {json.dumps({'status': 'erro', 'message': '❌ Erro na coleta', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    break
+                elif status == 'RUNNING':
+                    elapsed = int(time.time() - start_time)
+                    yield f"data: {json.dumps({'status': 'executando', 'elapsed_seconds': elapsed, 'total_vagas': current_count, 'message': f'⏳ Coletando... {current_count} vagas encontradas', 'timestamp': datetime.now().isoformat()})}\n\n"
+                
+                time.sleep(10)  # Poll a cada 10 segundos
+            
+            # Finaliza coleta
+            todos_resultados = scraper.obter_todos_resultados(dataset_id)
+            yield f"data: {json.dumps({'status': 'finalizado', 'total_vagas': len(todos_resultados), 'vagas': todos_resultados, 'timestamp': datetime.now().isoformat()})}\n\n"
             
         except Exception as e:
-            logger.error(f"Erro no streaming: {str(e)}")
-            yield f"data: {json.dumps({'status': 'erro', 'message': str(e), 'progress': -1})}\n\n"
+            logger.error(f"Erro no streaming: {e}")
+            yield f"data: {json.dumps({'error': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
     
-    return Response(stream_with_context(generate()), content_type='text/event-stream')
+    return Response(
+        generate_stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        }
+    )
 
 @app.route('/api/results/<result_id>', methods=['GET'])
 def get_result(result_id):
