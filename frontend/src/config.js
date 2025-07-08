@@ -1,5 +1,5 @@
 // Configuração da API
-const API_URL = process.env.REACT_APP_API_URL || process.env.VITE_API_URL || 'http://localhost:5001';
+const API_URL = process.env.REACT_APP_API_URL || process.env.VITE_API_URL || 'https://helio-backend-v2-production.up.railway.app';
 
 export default {
   API_URL,
