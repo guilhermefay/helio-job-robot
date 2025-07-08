@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
+# Make start script executable
+RUN chmod +x start.sh
+
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
@@ -25,4 +28,4 @@ USER app
 EXPOSE 8000
 
 # Command to run the Flask streaming application
-CMD gunicorn app_streaming:app --bind 0.0.0.0:8000 --timeout 300 
+CMD ["./start.sh"] 
