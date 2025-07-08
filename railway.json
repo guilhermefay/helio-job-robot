@@ -10,5 +10,13 @@
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
+  },
+  "proxy": {
+    "headers": {
+      "Access-Control-Allow-Origin": "https://agenteslinkedin.vercel.app",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true"
+    }
   }
 }
