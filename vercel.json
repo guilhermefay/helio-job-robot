@@ -2,5 +2,21 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/build",
   "installCommand": "cd frontend && npm install",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "functions": {
+    "app_streaming.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/app_streaming.py"
+    }
+  ],
+  "build": {
+    "env": {
+      "PYTHONPATH": "."
+    }
+  }
 }
