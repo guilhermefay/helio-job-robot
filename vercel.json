@@ -1,22 +1,25 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/build",
-  "installCommand": "cd frontend && npm install",
-  "framework": "create-react-app",
-  "functions": {
-    "app_streaming.py": {
-      "runtime": "python3.9"
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/app_streaming.py"
+      "dest": "/404.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/build/$1"
     }
   ],
-  "build": {
-    "env": {
-      "PYTHONPATH": "."
-    }
-  }
+  "outputDirectory": "frontend/build",
+  "installCommand": "cd frontend && npm install",
+  "framework": "create-react-app"
 }
