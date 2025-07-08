@@ -37,7 +37,12 @@ logger = logging.getLogger(__name__)
 
 # Criar aplicação Flask
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000', 'https://*.vercel.app', 'https://*.vercel.app'], supports_credentials=True)  # Permitir requisições do frontend
+CORS(app, origins=[
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'https://agenteslinkedin.vercel.app',
+    os.getenv("FRONTEND_URL", "http://localhost:3000")
+], supports_credentials=True)  # Permitir requisições do frontend
 
 # Configurar diretório de uploads
 UPLOAD_FOLDER = Path('uploads')
