@@ -81,7 +81,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={searchConfig.area}
+            value={config.area}
             onChange={(e) => handleChange('area', e.target.value)}
             disabled={disabled}
             placeholder="Ex: Marketing Digital, Desenvolvimento, RH..."
@@ -97,7 +97,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={searchConfig.cargo}
+            value={config.cargo}
             onChange={(e) => handleChange('cargo', e.target.value)}
             disabled={disabled}
             placeholder="Ex: Analista, Coordenador, Gerente..."
@@ -113,7 +113,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={searchConfig.localizacao}
+            value={config.localizacao}
             onChange={(e) => handleChange('localizacao', e.target.value)}
             disabled={disabled}
             placeholder="Ex: São Paulo, Rio de Janeiro, Remoto..."
@@ -128,7 +128,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             Quantidade de Vagas
           </label>
           <select
-            value={searchConfig.quantidade}
+            value={config.quantidade}
             onChange={(e) => handleChange('quantidade', parseInt(e.target.value))}
             disabled={disabled}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
@@ -152,7 +152,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           Segmentos de Interesse (opcional)
         </label>
         <textarea
-          value={searchConfig.segmentos}
+          value={config.segmentos}
           onChange={(e) => handleChange('segmentos', e.target.value)}
           disabled={disabled}
           placeholder="Ex: Startups, Multinacionais, Consultoria, E-commerce..."
