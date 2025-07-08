@@ -101,8 +101,8 @@ def health_check():
 @app.route('/api/debug/config', methods=['GET'])
 def debug_config():
     """Endpoint de debug para verificar configuração atual"""
-    from services.linkedin_apify_scraper import LinkedInApifyScraper
-    from services.ai_keyword_extractor import AIKeywordExtractor
+    from core.services.linkedin_apify_scraper import LinkedInApifyScraper
+    from core.services.ai_keyword_extractor import AIKeywordExtractor
     
     scraper = LinkedInApifyScraper()
     ai_extractor = AIKeywordExtractor()
@@ -802,7 +802,7 @@ def test_quick_collect():
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🧪 TESTE RÁPIDO: Iniciando...")
         
         # Verificar Apify
-        from services.linkedin_apify_scraper import LinkedInApifyScraper
+        from core.services.linkedin_apify_scraper import LinkedInApifyScraper
         scraper = LinkedInApifyScraper()
         
         if scraper.verificar_credenciais():
@@ -867,7 +867,7 @@ def collect_jobs_only():
         print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎯 Meta: {data['total_vagas_desejadas']} vagas")
         
         # Verificar se Apify está configurado
-        from services.linkedin_apify_scraper import LinkedInApifyScraper
+        from core.services.linkedin_apify_scraper import LinkedInApifyScraper
         scraper = LinkedInApifyScraper()
         if not scraper.verificar_credenciais():
             print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️  AVISO: Apify não configurado, usando fallback")
