@@ -81,7 +81,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={config.area}
+            value={searchConfig.area}
             onChange={(e) => handleChange('area', e.target.value)}
             disabled={disabled}
             placeholder="Ex: Marketing Digital, Desenvolvimento, RH..."
@@ -97,7 +97,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={config.cargo}
+            value={searchConfig.cargo}
             onChange={(e) => handleChange('cargo', e.target.value)}
             disabled={disabled}
             placeholder="Ex: Analista, Coordenador, Gerente..."
@@ -113,7 +113,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           </label>
           <input
             type="text"
-            value={config.localizacao}
+            value={searchConfig.localizacao}
             onChange={(e) => handleChange('localizacao', e.target.value)}
             disabled={disabled}
             placeholder="Ex: São Paulo, Rio de Janeiro, Remoto..."
@@ -128,7 +128,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             Quantidade de Vagas
           </label>
           <select
-            value={config.quantidade}
+            value={searchConfig.quantidade}
             onChange={(e) => handleChange('quantidade', parseInt(e.target.value))}
             disabled={disabled}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
@@ -152,7 +152,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           Segmentos de Interesse (opcional)
         </label>
         <textarea
-          value={config.segmentos}
+          value={searchConfig.segmentos}
           onChange={(e) => handleChange('segmentos', e.target.value)}
           disabled={disabled}
           placeholder="Ex: Startups, Multinacionais, Consultoria, E-commerce..."
@@ -890,7 +890,7 @@ const ResultsDisplay = ({ results }) => {
 
 // Main Component
 const Agent1 = () => {
-  const [config, setConfig] = useState({
+  const [searchConfig, setSearchConfig] = useState({
     area: '',
     cargo: '',
     localizacao: '',
@@ -940,7 +940,7 @@ const Agent1 = () => {
   }
 
   const handleStartCollection = async () => {
-    if (!config.area.trim() || !config.cargo.trim() || !config.localizacao.trim()) {
+    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
       setError('Por favor, preencha todos os campos obrigatórios.')
       return
     }
@@ -954,11 +954,11 @@ const Agent1 = () => {
     setCurrentStep(1)
     try {
       const requestData = {
-        area_interesse: config.area.trim(),
-        cargo_objetivo: config.cargo.trim(),
-        localizacao: config.localizacao.trim(),
-        total_vagas_desejadas: config.quantidade,
-        segmentos_alvo: config.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
+        area_interesse: searchConfig.area.trim(),
+        cargo_objetivo: searchConfig.cargo.trim(),
+        localizacao: searchConfig.localizacao.trim(),
+        total_vagas_desejadas: searchConfig.quantidade,
+        segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
         tipo_vaga: 'hibrido' // Adicionar tipo de vaga
       }
 
@@ -1034,8 +1034,8 @@ const Agent1 = () => {
     try {
       const requestData = {
         collection_id: collectionData.id,
-        area_interesse: config.area.trim(),
-        cargo_objetivo: config.cargo.trim()
+        area_interesse: searchConfig.area.trim(),
+        cargo_objetivo: searchConfig.cargo.trim()
       }
 
       setCurrentStep(6)
@@ -1081,7 +1081,7 @@ const Agent1 = () => {
   }
 
   const handleStartCollectionOld = async () => {
-    if (!config.area.trim() || !config.cargo.trim() || !config.localizacao.trim()) {
+    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
       setError('Por favor, preencha todos os campos obrigatórios.')
       return
     }
@@ -1094,11 +1094,11 @@ const Agent1 = () => {
       // Usar novo endpoint com streaming
       try {
         const requestData = {
-          area_interesse: config.area.trim(),
-          cargo_objetivo: config.cargo.trim(),
-          localizacao: config.localizacao.trim(),
-          total_vagas_desejadas: config.quantidade,
-          segmentos_alvo: config.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
+          area_interesse: searchConfig.area.trim(),
+          cargo_objetivo: searchConfig.cargo.trim(),
+          localizacao: searchConfig.localizacao.trim(),
+          total_vagas_desejadas: searchConfig.quantidade,
+          segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
         }
 
         // Salvar dados da requisição e ativar o stream
@@ -1113,11 +1113,11 @@ const Agent1 = () => {
       setCurrentStep(1)
       try {
         const requestData = {
-          area_interesse: config.area.trim(),
-          cargo_objetivo: config.cargo.trim(),
-          localizacao: config.localizacao.trim(),
-          total_vagas_desejadas: config.quantidade,
-          segmentos_alvo: config.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
+          area_interesse: searchConfig.area.trim(),
+          cargo_objetivo: searchConfig.cargo.trim(),
+          localizacao: searchConfig.localizacao.trim(),
+          total_vagas_desejadas: searchConfig.quantidade,
+          segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
         }
 
         setCurrentStep(2)
@@ -1211,9 +1211,9 @@ const Agent1 = () => {
         {!results && !collectionData ? (
           /* Configuration Section */
           <div className="space-y-6">
-            <SearchConfiguration
-              config={config}
-              onChange={setConfig}
+                          <SearchConfiguration
+                config={searchConfig}
+                onChange={setSearchConfig}
               disabled={isProcessing}
             />
 
@@ -1251,15 +1251,15 @@ const Agent1 = () => {
                       <h4 className="text-sm font-medium text-blue-800">Coletando vagas reais...</h4>
                       <p className="text-xs text-blue-700 mt-1">
                         Tempo estimado:
-                        {config.quantidade <= 50 && ' 1-2 minutos'}
-                        {config.quantidade > 50 && config.quantidade <= 100 && ' 2-3 minutos'}
-                        {config.quantidade > 100 && config.quantidade <= 200 && ' 3-5 minutos'}
-                        {config.quantidade > 200 && ' 5-10 minutos (grande volume)'}
+                        {searchConfig.quantidade <= 50 && ' 1-2 minutos'}
+                        {searchConfig.quantidade > 50 && searchConfig.quantidade <= 100 && ' 2-3 minutos'}
+                        {searchConfig.quantidade > 100 && searchConfig.quantidade <= 200 && ' 3-5 minutos'}
+                        {searchConfig.quantidade > 200 && ' 5-10 minutos (grande volume)'}
                       </p>
                       <div className="mt-2">
                         <div className="flex items-center text-xs text-blue-600">
                           <div className="animate-pulse mr-2">●</div>
-                          <span>Buscando {config.quantidade} vagas do LinkedIn via Apify</span>
+                          <span>Buscando {searchConfig.quantidade} vagas do LinkedIn via Apify</span>
                         </div>
                         <div className="flex items-center text-xs text-blue-600 mt-1">
                           <div className="animate-pulse mr-2">●</div>
@@ -1282,7 +1282,7 @@ const Agent1 = () => {
             collectionData={collectionData}
             onAnalyze={handleAnalyzeKeywords}
             isAnalyzing={isAnalyzing}
-            config={config}
+            config={searchConfig}
           />
         ) : results ? (
           /* Results Section */
