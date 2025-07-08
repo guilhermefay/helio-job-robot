@@ -940,6 +940,116 @@ def collect_jobs_only():
         logger.error(f"Erro na coleta de vagas: {str(e)}")
         return jsonify({'error': f'Erro interno: {str(e)}'}), 500
 
+@app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
+@cross_origin(origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
+def collect_jobs_stream_real():
+    """
+    Endpoint de streaming que coleta vagas em tempo real via Apify
+    Retorna resultados progressivamente usando Server-Sent Events (SSE)
+    """
+    
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    def generate_stream():
+        try:
+            data = request.get_json()
+            logger.info(f"🚀 Iniciando coleta streaming: {data}")
+            
+            # Validações básicas
+            required_fields = ['area_interesse', 'cargo_objetivo', 'localizacao', 'total_vagas_desejadas']
+            for field in required_fields:
+                if not data.get(field):
+                    yield f"data: {json.dumps({'error': f'Campo obrigatório: {field}'})}\n\n"
+                    return
+            
+            # Inicia a coleta via scraper
+            from core.services.job_scraper import JobScraper
+            scraper = JobScraper()
+            
+            # Inicia a execução no Apify
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': '🚀 Iniciando busca no LinkedIn...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            # Executa a coleta (modificada para retornar run_id)
+            try:
+                run_id, dataset_id = scraper.iniciar_coleta_streaming(
+                    area_interesse=data['area_interesse'],
+                    cargo_objetivo=data['cargo_objetivo'], 
+                    localizacao=data['localizacao'],
+                    total_vagas_desejadas=data.get('total_vagas_desejadas', 800)
+                )
+            except Exception as e:
+                yield f"data: {json.dumps({'error': f'Erro ao iniciar coleta: {str(e)}'})}\n\n"
+                return
+            
+            if not run_id:
+                yield f"data: {json.dumps({'error': 'Falha ao iniciar coleta no Apify'})}\n\n"
+                return
+                
+            yield f"data: {json.dumps({'status': 'executando', 'run_id': run_id, 'dataset_id': dataset_id, 'message': '⚡ Coletando vagas...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            # Poll dos resultados em tempo real
+            last_count = 0
+            timeout = 420  # 7 minutos
+            start_time = time.time()
+            
+            while time.time() - start_time < timeout:
+                try:
+                    # Verifica status do run
+                    status = scraper.verificar_status_run(run_id)
+                    
+                    # Verifica novos resultados no dataset
+                    current_count = scraper.contar_resultados_dataset(dataset_id)
+                    
+                    # Se há novos resultados, envia para o frontend
+                    if current_count > last_count:
+                        novos_resultados = scraper.obter_resultados_parciais(dataset_id, last_count, current_count)
+                        
+                        for resultado in novos_resultados:
+                            yield f"data: {json.dumps({'type': 'nova_vaga', 'vaga': resultado, 'total': current_count, 'timestamp': datetime.now().isoformat()})}\n\n"
+                        
+                        last_count = current_count
+                    
+                    # Status updates
+                    if status == 'SUCCEEDED':
+                        yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': current_count, 'message': f'✅ Coleta concluída! {current_count} vagas encontradas', 'timestamp': datetime.now().isoformat()})}\n\n"
+                        break
+                    elif status == 'FAILED':
+                        yield f"data: {json.dumps({'status': 'erro', 'message': '❌ Erro na coleta', 'timestamp': datetime.now().isoformat()})}\n\n"
+                        break
+                    elif status == 'RUNNING':
+                        elapsed = int(time.time() - start_time)
+                        yield f"data: {json.dumps({'status': 'executando', 'elapsed_seconds': elapsed, 'total_vagas': current_count, 'message': f'⏳ Coletando... {current_count} vagas encontradas', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    
+                    time.sleep(10)  # Poll a cada 10 segundos
+                    
+                except Exception as poll_error:
+                    logger.error(f"Erro no polling: {poll_error}")
+                    yield f"data: {json.dumps({'status': 'erro_polling', 'message': f'Erro no monitoramento: {str(poll_error)}', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    time.sleep(10)
+            
+            # Finaliza coleta
+            try:
+                todos_resultados = scraper.obter_todos_resultados(dataset_id)
+                yield f"data: {json.dumps({'status': 'finalizado', 'total_vagas': len(todos_resultados), 'vagas': todos_resultados, 'timestamp': datetime.now().isoformat()})}\n\n"
+            except Exception as final_error:
+                yield f"data: {json.dumps({'status': 'erro_final', 'message': f'Erro ao obter resultados finais: {str(final_error)}', 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Erro no streaming: {e}")
+            yield f"data: {json.dumps({'error': str(e), 'timestamp': datetime.now().isoformat()})}\n\n"
+    
+    return Response(
+        generate_stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type',
+        }
+    )
+
 @app.route('/api/agent1/analyze-keywords', methods=['POST'])
 @cross_origin(origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
 def analyze_keywords():
