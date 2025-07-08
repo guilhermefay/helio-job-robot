@@ -5,7 +5,6 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
-ENV PORT=8000
 
 # Set work directory
 WORKDIR /app
@@ -23,7 +22,7 @@ RUN useradd --create-home --shell /bin/bash app \
 USER app
 
 # Expose port
-EXPOSE $PORT
+EXPOSE 8000
 
 # Command to run the Flask streaming application
-CMD ["gunicorn", "app_streaming:app", "--bind", "0.0.0.0:$PORT", "--timeout", "300"] 
+CMD gunicorn app_streaming:app --bind 0.0.0.0:8000 --timeout 300 
