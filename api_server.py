@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 # Criar aplicação Flask
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000'], supports_credentials=True)  # Permitir requisições do frontend
+CORS(app, origins=['http://localhost:3000', 'https://*.vercel.app', 'https://*.vercel.app'], supports_credentials=True)  # Permitir requisições do frontend
 
 # Configurar diretório de uploads
 UPLOAD_FOLDER = Path('uploads')
@@ -1116,13 +1116,15 @@ def internal_error(error):
     return jsonify({'error': 'Erro interno do servidor'}), 500
 
 if __name__ == '__main__':
-    print("🚀 Iniciando servidor API HELIO...")
-    print("🔗 Frontend: http://localhost:3000")
-    print("🔗 Backend API: http://localhost:5001")
-    print("📚 Documentação: http://localhost:5001/api/health")
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
+    
+    print("🚀 Iniciando servidor API - Agentes IA...")
+    print(f"🔗 Backend API rodando na porta: {port}")
+    print("📚 Documentação: /api/health")
     
     app.run(
         host='0.0.0.0',
-        port=5001,
-        debug=True
+        port=port,
+        debug=debug
     )

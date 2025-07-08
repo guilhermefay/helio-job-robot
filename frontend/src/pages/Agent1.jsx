@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import config from '../config'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -920,7 +921,7 @@ const Agent1 = () => {
   const handleStreamComplete = async (resultId) => {
     try {
       // Buscar resultado completo
-      const response = await fetch(`http://localhost:5001/api/results/${resultId}`)
+      const response = await fetch(`${config.endpoints.results}/${resultId}`)
       const data = await response.json()
       setResults(data)
       setIsStreamActive(false)
@@ -965,7 +966,7 @@ const Agent1 = () => {
 
       // ETAPA 1: Coletar vagas
       // Primeiro tentar o endpoint real
-      let response = await fetch('http://localhost:5001/api/agent1/collect-jobs', {
+      let response = await fetch(config.endpoints.agent1.collectJobs, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -983,7 +984,7 @@ const Agent1 = () => {
         
         if (shouldUseDemo) {
           console.log('Mudando para modo DEMO...')
-          response = await fetch('http://localhost:5001/api/agent1/collect-jobs-demo', {
+          response = await fetch(config.endpoints.agent1.collectJobsDemo, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1040,7 +1041,7 @@ const Agent1 = () => {
       setCurrentStep(6)
 
       // ETAPA 2: Analisar palavras-chave com Gemini
-      const response = await fetch('http://localhost:5001/api/agent1/analyze-keywords', {
+      const response = await fetch(config.endpoints.agent1.analyzeKeywords, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

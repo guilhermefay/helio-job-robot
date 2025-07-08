@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import config from '../config'
 import {
   CloudArrowUpIcon,
   DocumentTextIcon,
@@ -854,7 +855,7 @@ const Agent0 = () => {
         setCurrentStep(2) // Processando texto
         
         // Chamar API real do backend
-        const response = await fetch('http://localhost:5001/api/agent0/analyze-cv', {
+        const response = await fetch('config.endpoints.agent0.analyzeCV', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -881,7 +882,7 @@ const Agent0 = () => {
       // Para arquivo, usar FormData
       setCurrentStep(2)
       
-      const response = await fetch('http://localhost:5001/api/agent0/analyze-cv', {
+      const response = await fetch('config.endpoints.agent0.analyzeCV', {
         method: 'POST',
         body: formData
       })

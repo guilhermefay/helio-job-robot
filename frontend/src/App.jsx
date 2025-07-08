@@ -43,7 +43,7 @@ const Header = ({ showBackButton = false, title = null }) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
-                  {title || 'HELIO - Jornada IA'}
+                  {title || 'Agentes IA - Metodologia Carol Martins'}
                 </h1>
                 {!title && (
                   <p className="text-sm text-gray-600">
