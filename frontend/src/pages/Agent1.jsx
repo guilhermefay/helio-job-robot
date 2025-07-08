@@ -1157,9 +1157,9 @@ const Agent1 = () => {
   }
 
   const canStartCollection = (
-    config.area.trim() && 
-    config.cargo.trim() && 
-    config.localizacao.trim() && 
+    searchConfig.area.trim() && 
+    searchConfig.cargo.trim() && 
+    searchConfig.localizacao.trim() && 
     !isProcessing
   )
 
