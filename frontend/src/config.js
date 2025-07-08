@@ -11,6 +11,7 @@ export default {
     agent1: {
       collectJobs: `${API_URL}/api/agent1/collect-jobs`,
       collectJobsDemo: `${API_URL}/api/agent1/collect-jobs-demo`,
+      collectJobsStream: `${API_URL}/api/agent1/collect-jobs-stream`,
       analyzeKeywords: `${API_URL}/api/agent1/analyze-keywords`,
       collectKeywordsStream: `${API_URL}/api/agent1/collect-keywords-stream`
     },
