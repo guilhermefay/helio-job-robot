@@ -12,12 +12,15 @@ uploads/
 *.db
 *.log
 
-# Ignorar node_modules do frontend
-frontend/node_modules/
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
+# Preservar frontend antigo (pasta)
+frontend/
+
+# Ignorar node_modules
+node_modules/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # OS
 .DS_Store
