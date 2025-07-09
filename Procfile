@@ -1,1 +1,1 @@
-web: python simple_test.py
+web: gunicorn simple_test:app --bind 0.0.0.0:$PORT
