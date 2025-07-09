@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "homepage": "/",
+  "license": "MIT",
+  "engines": {
+    "node": "18"
+  },
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "react": "^18.2.0",
