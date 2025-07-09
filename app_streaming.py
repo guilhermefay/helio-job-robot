@@ -376,23 +376,6 @@ def collect_jobs_stream():
         }
     )
 
-@app.route('/', methods=['GET'])
-def root():
-    """Endpoint raiz"""
-    apify_token = os.environ.get('APIFY_API_TOKEN')
-    apify_status = "✅ CONFIGURADO" if apify_token else "❌ NÃO CONFIGURADO"
-    
-    return jsonify({
-        'service': 'HELIO Job Robot API',
-        'status': 'online',
-        'mode': 'APIFY REAL + DEMO FALLBACK',
-        'apify_status': apify_status,
-        'endpoints': [
-            '/api/health',
-            '/api/agent1/collect-keywords',
-            '/api/agent1/collect-jobs-stream'
-        ]
-    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
