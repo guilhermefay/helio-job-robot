@@ -146,13 +146,13 @@ def collect_keywords():
             
             # Executar coleta
             logger.info("🚀 Iniciando scraping com APIFY...")
-            resultado_scraping = scraper.coletar_vagas(
+            resultado_scraping = scraper.coletar_vagas_linkedin(
                 cargo=cargo,
                 localizacao=localizacao,
-                total_vagas=quantidade
+                limite=quantidade
             )
             
-            if not resultado_scraping or not resultado_scraping.get('vagas'):
+            if not resultado_scraping:
                 logger.error("❌ Nenhuma vaga coletada pelo APIFY")
                 return jsonify({
                     'error': 'Nenhuma vaga encontrada',
@@ -160,7 +160,7 @@ def collect_keywords():
                 }), 404
             
             # Processar resultado
-            vagas_processadas = resultado_scraping['vagas']
+            vagas_processadas = resultado_scraping
             total_vagas = len(vagas_processadas)
             
             # Montar resposta final
@@ -178,15 +178,15 @@ def collect_keywords():
                     'totalVagas': total_vagas,
                     'vagasAnalisadas': total_vagas,
                     'successRate': 100 if total_vagas > 0 else 0,
-                    'tempoColeta': resultado_scraping.get('tempo_execucao', 'N/A')
+                    'tempoColeta': 'N/A'
                 },
                 'transparencia': {
                     'fontes_utilizadas': ['LinkedIn via APIFY'],
                     'metodo_coleta': 'APIFY LinkedIn Jobs Scraper',
                     'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
                     'observacoes': 'Dados reais coletados do LinkedIn via APIFY API',
-                    'actor_id': resultado_scraping.get('actor_id', 'N/A'),
-                    'run_id': resultado_scraping.get('run_id', 'N/A')
+                    'actor_id': 'curious_coder~linkedin-jobs-scraper',
+                    'run_id': 'N/A'
                 },
                 'vagas': vagas_processadas
             }
