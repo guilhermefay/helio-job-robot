@@ -76,12 +76,19 @@ def root():
     return jsonify({
         'service': 'helio-job-robot',
         'status': 'running',
+        'port': os.environ.get('PORT', 'not set'),
+        'railway_env': os.environ.get('RAILWAY_ENVIRONMENT', 'not set'),
         'endpoints': [
             '/api/health',
             '/api/agent1/collect-keywords',
             '/api/agent1/collect-jobs-stream'
         ]
     })
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Simple health check for Railway"""
+    return 'OK', 200
 
 @app.route('/api/health', methods=['GET'])
 def health():
@@ -376,6 +383,14 @@ def collect_jobs_stream():
         }
     )
 
+
+# Print environment info at module level
+logger.info("=" * 50)
+logger.info("🚀 HELIO JOB ROBOT - INICIALIZANDO")
+logger.info(f"📍 Ambiente: {'Railway' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Local'}")
+logger.info(f"🔑 PORT: {os.environ.get('PORT', 'Não definido')}")
+logger.info(f"🔑 APIFY_API_TOKEN: {'Configurado' if os.environ.get('APIFY_API_TOKEN') else 'Não configurado'}")
+logger.info("=" * 50)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
