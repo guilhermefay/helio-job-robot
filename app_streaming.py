@@ -9,7 +9,7 @@ import time
 import logging
 from datetime import datetime
 from flask import Flask, request, Response, jsonify
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 
 # Configurar logging
 logging.basicConfig(
@@ -35,43 +35,30 @@ app = Flask(__name__)
 
 # CORS para Vercel - configuração completa
 CORS(app, 
-     origins=[
-         'https://agenteslinkedin.vercel.app',
-         'https://helio-job-robot.vercel.app', 
-         'https://helio-job-robot-*.vercel.app',
-         'http://localhost:3000',
-         'http://localhost:3001'
-     ], 
-     allow_headers=['Content-Type', 'Authorization'], 
-     methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
-     supports_credentials=True)
+     resources={
+         r"/api/*": {
+             "origins": [
+                 'https://agenteslinkedin.vercel.app',
+                 'https://helio-job-robot.vercel.app', 
+                 'https://helio-job-robot-*.vercel.app',
+                 'http://localhost:3000',
+                 'http://localhost:3001'
+             ],
+             "methods": ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+             "allow_headers": ['Content-Type', 'Authorization'],
+             "supports_credentials": True
+         }
+     })
 
 @app.after_request
 def after_request(response):
-    """Adiciona headers CORS em todas as respostas"""
+    """Log CORS requests for debugging"""
     origin = request.headers.get('Origin')
-    allowed_origins = [
-        'https://agenteslinkedin.vercel.app',
-        'https://helio-job-robot.vercel.app',
-        'http://localhost:3000',
-        'http://localhost:3001'
-    ]
-    
-    logger.info(f"🌐 CORS Debug - Origin: {origin}")
-    
-    if origin in allowed_origins or (origin and 'helio-job-robot' in origin and 'vercel.app' in origin):
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        logger.info(f"✅ CORS permitido para origem: {origin}")
-    else:
-        logger.warning(f"❌ CORS negado para origem: {origin}")
-    
+    if origin:
+        logger.info(f"🌐 CORS Debug - Origin: {origin}, Method: {request.method}, Path: {request.path}")
     return response
 
 @app.route('/api/health', methods=['GET'])
-@cross_origin()
 def health():
     """Health check"""
     apify_token = os.environ.get('APIFY_API_TOKEN')
@@ -86,7 +73,6 @@ def health():
     })
 
 @app.route('/api/agent1/collect-keywords', methods=['POST', 'OPTIONS'])
-@cross_origin()
 def collect_keywords():
     """Endpoint principal para coleta de vagas - compatível com frontend"""
     
@@ -235,7 +221,6 @@ def collect_keywords():
         }), 500
 
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
-@cross_origin()
 def collect_jobs_stream():
     """Endpoint de streaming de coleta de vagas"""
     
@@ -386,5 +371,14 @@ def root():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    logger.info(f"Iniciando HELIO Streaming API na porta {port}")
-    app.run(host='0.0.0.0', port=port, debug=False) 
+    logger.info(f"🚀 Iniciando HELIO Streaming API na porta {port}")
+    logger.info(f"📍 Ambiente: {'Railway' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Local'}")
+    logger.info(f"🔑 APIFY_API_TOKEN: {'Configurado' if os.environ.get('APIFY_API_TOKEN') else 'Não configurado'}")
+    
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False)
+    except Exception as e:
+        logger.error(f"❌ Erro ao iniciar aplicação: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1) 
