@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import config from '../config'
+import ProgressStream from '../components/ProgressStream'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -885,27 +886,6 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
-const StreamingJobCollection = ({ isVisible, onClose }) => {
-  if (!isVisible) return null
-  
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold mb-2">Coletando Vagas...</h3>
-          <p className="text-gray-600 mb-4">Aguarde enquanto coletamos as vagas do mercado</p>
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // Main Component
 const Agent1 = () => {
@@ -1007,10 +987,35 @@ const Agent1 = () => {
       console.log('📋 Headers: Content-Type: application/json')
       console.log('⏰ Timestamp:', new Date().toISOString())
 
-      // TENTAR REQUISIÇÃO REAL PRIMEIRO
+      // TENTAR STREAMING PRIMEIRO (SE DISPONÍVEL)
       let response
       let useLocalFallback = false
+      let streamingAvailable = false
       
+      // Verificar se o endpoint de streaming existe
+      try {
+        const streamEndpoint = `${config.baseURL}/api/agent1/collect-jobs-stream`
+        console.log('🌊 Tentando usar streaming em:', streamEndpoint)
+        
+        // Tentar OPTIONS para ver se o endpoint existe
+        const optionsResponse = await fetch(streamEndpoint, { method: 'OPTIONS' })
+        streamingAvailable = optionsResponse.ok
+        console.log('Streaming disponível?', streamingAvailable)
+      } catch (e) {
+        console.log('Streaming não disponível, usando método tradicional')
+        streamingAvailable = false
+      }
+      
+      if (streamingAvailable) {
+        // USAR STREAMING
+        setIsProcessing(true)
+        setIsStreamActive(true)
+        console.log('🌊 Iniciando coleta com streaming...')
+        // O ProgressStream vai gerenciar a coleta
+        return // Deixar o ProgressStream gerenciar o resto
+      }
+      
+      // MÉTODO TRADICIONAL (sem streaming)
       try {
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Timeout')), 600000) // 10 minutos
@@ -1121,6 +1126,22 @@ const Agent1 = () => {
     }
   }
 
+  // Handlers para o streaming
+  const handleStreamComplete = (data) => {
+    console.log('🎉 Streaming concluído com sucesso!', data)
+    setIsStreamActive(false)
+    setIsProcessing(false)
+    setCollectionData(data)
+    setCurrentStep(4)
+  }
+
+  const handleStreamError = (error) => {
+    console.error('❌ Erro no streaming:', error)
+    setIsStreamActive(false)
+    setIsProcessing(false)
+    setError(error.message || 'Erro durante o streaming')
+  }
+
   const handleAnalyzeKeywords = async () => {
     if (!collectionData || !collectionData.id) {
       setError('Nenhuma coleta disponível para análise')
@@ -1192,11 +1213,21 @@ const Agent1 = () => {
       <Header />
       
       {/* Progress Stream Modal */}
-      <StreamingJobCollection 
-        isVisible={isStreamActive}
-        onJobsCollected={handleStreamComplete}
-        onClose={handleStreamError}
-      />
+      {isStreamActive && (
+        <ProgressStream
+          endpoint="/api/agent1/collect-jobs-stream"
+          requestData={{
+            area_interesse: searchConfig.area.trim(),
+            cargo_objetivo: searchConfig.cargo.trim(),
+            localizacao: searchConfig.localizacao.trim(),
+            total_vagas_desejadas: searchConfig.quantidade,
+            segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+            tipo_vaga: 'hibrido'
+          }}
+          onComplete={handleStreamComplete}
+          onError={handleStreamError}
+        />
+      )}
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
