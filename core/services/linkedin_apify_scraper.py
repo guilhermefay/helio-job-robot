@@ -54,17 +54,17 @@ class LinkedInApifyScraper:
             # 🔥 URL OTIMIZADA: Filtro últimos 7 dias para relevância
             search_url = f"https://www.linkedin.com/jobs/search/?keywords={cargo}&location={localizacao}&f_TPR=r604800"
             
-            # 🎯 INPUT MÁXIMO: Deixa Apify buscar o máximo possível
+            # 🎯 INPUT OTIMIZADO: Para API, vamos ser mais rápidos
             input_data = {
                 "urls": [search_url],
-                "numberOfJobsNeeded": 20000,  # 🚀 MÁXIMO POSSÍVEL! 
+                "numberOfJobsNeeded": min(limite * 3, 100),  # 🚀 Máximo 100 para API 
                 "scrapeCompanyDetails": True,
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
                 },
-                "timeout": 600,  # 🕐 10 minutos - mais tempo para mais vagas
-                "maxConcurrency": 3  # Aumenta concorrência
+                "timeout": 180,  # 🕐 3 minutos - mais rápido para API
+                "maxConcurrency": 5  # Mais concorrência para velocidade
             }
             
             print(f"🚀 Buscando MÁXIMO de vagas: {cargo} em {localizacao}")
@@ -85,11 +85,12 @@ class LinkedInApifyScraper:
                 print(f"❌ Erro ao iniciar scraping: {run_response.status_code}")
                 return self._dados_fallback_linkedin()
             
-            run_id = run_response.json()["data"]["id"]
+            run_data = run_response.json()
+            run_id = run_data["data"]["id"]
             print(f"✅ Scraping iniciado - ID: {run_id}")
             
-            # 🕐 AGUARDAR com paciência para MAIS vagas
-            max_attempts = 40  # ~7 minutos máximo (mais tempo = mais vagas)
+            # 🕐 AGUARDAR com paciência mas não demais
+            max_attempts = 20  # ~3.5 minutos máximo (para API ser mais rápida)
             attempt = 0
             
             while attempt < max_attempts:
@@ -103,7 +104,8 @@ class LinkedInApifyScraper:
                 )
                 
                 if status_response.status_code == 200:
-                    status = status_response.json()["data"]["status"]
+                    status_data = status_response.json()
+                    status = status_data["data"]["status"]
                     
                     # 📊 Log progresso a cada minuto
                     if attempt % 6 == 0:  # A cada 6 checks = 1 minuto
@@ -115,16 +117,33 @@ class LinkedInApifyScraper:
                     elif status in ["FAILED", "ABORTED", "TIMED-OUT"]:
                         print(f"❌ Scraping falhou: {status}")
                         return self._dados_fallback_linkedin()
-                    else:
-                        print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
+                else:
+                    print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
             
             if attempt >= max_attempts:
                 print("⏰ Timeout: Mas vamos tentar baixar o que conseguiu...")
                 # 🎯 Mesmo com timeout, tenta baixar resultados parciais
             
             # 📥 BAIXAR TODOS OS RESULTADOS
+            print(f"📥 Baixando resultados...")
+            
+            # 🎯 CORREÇÃO: Primeiro obter info do run para pegar o datasetId
+            run_info_response = requests.get(
+                f"{self.base_url}/actor-runs/{run_id}",
+                headers={"Authorization": f"Bearer {self.apify_token}"},
+                timeout=30
+            )
+            
+            if run_info_response.status_code == 200:
+                run_info = run_info_response.json()
+                dataset_id = run_info["data"]["defaultDatasetId"]
+            else:
+                print(f"⚠️ Erro ao obter dataset ID: {run_info_response.status_code}")
+                # Fallback: usar run_id como dataset_id (pode não funcionar)
+                dataset_id = run_id
+            
             results_response = requests.get(
-                f"{self.base_url}/datasets/{run_id}/items",
+                f"{self.base_url}/datasets/{dataset_id}/items",
                 headers={"Authorization": f"Bearer {self.apify_token}"},
                 timeout=60  # Mais tempo para download
             )
@@ -153,16 +172,17 @@ class LinkedInApifyScraper:
             for i, job_data in enumerate(vagas_finais):
                 try:
                     processed_job = {
-                        "titulo": job_data.get("jobTitle", "Título não informado"),
+                        "titulo": job_data.get("title", job_data.get("jobTitle", "Título não informado")),
                         "empresa": job_data.get("companyName", "Empresa não informada"),
                         "localizacao": job_data.get("location", localizacao),
-                        "descricao": job_data.get("description", "Descrição não disponível")[:500],
-                        "link": job_data.get("jobUrl", "#"),
+                        "descricao": job_data.get("descriptionText", job_data.get("description", "Descrição não disponível"))[:500],
+                        "link": job_data.get("link", job_data.get("jobUrl", "#")),
                         "data_publicacao": job_data.get("postedAt", "Não informado"),
-                        "tipo_contrato": job_data.get("jobType", "Não especificado"),
+                        "tipo_contrato": job_data.get("employmentType", job_data.get("jobType", "Não especificado")),
                         "nivel_experiencia": job_data.get("seniorityLevel", "Não especificado"),
-                        "salario": job_data.get("salary", "Não informado"),
-                        "fonte": "LinkedIn (Apify)"
+                        "salario": job_data.get("salaryInfo", ["Não informado"])[0] if job_data.get("salaryInfo") else "Não informado",
+                        "fonte": "LinkedIn (Apify)",
+                        "apify_real": True  # 🎯 MARCA COMO DADOS REAIS
                     }
                     processed_jobs.append(processed_job)
                 except Exception as e:
