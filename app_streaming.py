@@ -33,25 +33,206 @@ except ImportError as e:
 
 app = Flask(__name__)
 
-# CORS para Vercel
+# CORS para Vercel - configuração completa
 CORS(app, 
      origins=[
          'https://agenteslinkedin.vercel.app',
+         'https://helio-job-robot.vercel.app', 
+         'https://helio-job-robot-*.vercel.app',
          'http://localhost:3000',
          'http://localhost:3001'
      ], 
      allow_headers=['Content-Type', 'Authorization'], 
-     methods=['GET', 'POST', 'OPTIONS'])
+     methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+     supports_credentials=True)
+
+@app.after_request
+def after_request(response):
+    """Adiciona headers CORS em todas as respostas"""
+    origin = request.headers.get('Origin')
+    allowed_origins = [
+        'https://agenteslinkedin.vercel.app',
+        'https://helio-job-robot.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:3001'
+    ]
+    
+    logger.info(f"🌐 CORS Debug - Origin: {origin}")
+    
+    if origin in allowed_origins or (origin and 'helio-job-robot' in origin and 'vercel.app' in origin):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        logger.info(f"✅ CORS permitido para origem: {origin}")
+    else:
+        logger.warning(f"❌ CORS negado para origem: {origin}")
+    
+    return response
 
 @app.route('/api/health', methods=['GET'])
 @cross_origin()
 def health():
     """Health check"""
+    apify_token = os.environ.get('APIFY_API_TOKEN')
+    apify_status = "configurado" if apify_token else "não configurado"
+    
     return jsonify({
         'status': 'ok',
         'service': 'helio-streaming-api',
-        'timestamp': datetime.now().isoformat()
+        'timestamp': datetime.now().isoformat(),
+        'versao': '4.0-simplificada',
+        'apify_status': apify_status
     })
+
+@app.route('/api/agent1/collect-keywords', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def collect_keywords():
+    """Endpoint principal para coleta de vagas - compatível com frontend"""
+    
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        logger.info("🎯 Iniciando coleta REAL com APIFY LinkedIn Scraper")
+        
+        # Capturar dados da requisição
+        data = request.get_json()
+        if not data:
+            logger.error("❌ Dados não fornecidos na requisição")
+            return jsonify({'error': 'Dados não fornecidos na requisição'}), 400
+        
+        # Extrair parâmetros
+        cargo = data.get('cargo_objetivo', 'Desenvolvedor')
+        area = data.get('area_interesse', 'Tecnologia')
+        localizacao = data.get('localizacao', 'São Paulo')
+        quantidade = data.get('total_vagas_desejadas', 20)
+        
+        logger.info(f"📋 Parâmetros: cargo={cargo}, área={area}, local={localizacao}, qtd={quantidade}")
+        
+        # Verificar token APIFY
+        apify_token = os.environ.get('APIFY_API_TOKEN')
+        if not apify_token:
+            logger.error("❌ APIFY_API_TOKEN não configurado!")
+            return jsonify({
+                'error': 'APIFY_API_TOKEN não configurado',
+                'message': 'Configure a variável de ambiente APIFY_API_TOKEN no Railway'
+            }), 500
+        
+        # Verificar se os scrapers estão disponíveis
+        if JobScraper and LinkedInApifyScraper:
+            # Instanciar scraper APIFY
+            scraper = LinkedInApifyScraper()
+            
+            # Executar coleta
+            logger.info("🚀 Iniciando scraping com APIFY...")
+            resultado_scraping = scraper.coletar_vagas(
+                cargo=cargo,
+                localizacao=localizacao,
+                total_vagas=quantidade
+            )
+            
+            if not resultado_scraping or not resultado_scraping.get('vagas'):
+                logger.error("❌ Nenhuma vaga coletada pelo APIFY")
+                return jsonify({
+                    'error': 'Nenhuma vaga encontrada',
+                    'message': 'O APIFY não retornou vagas para os parâmetros informados'
+                }), 404
+            
+            # Processar resultado
+            vagas_processadas = resultado_scraping['vagas']
+            total_vagas = len(vagas_processadas)
+            
+            # Montar resposta final
+            resultado = {
+                'apify_mode': True,
+                'id': f'apify_{int(time.time())}',
+                'timestamp': datetime.now().isoformat(),
+                'parametros': {
+                    'area_interesse': area,
+                    'cargo_objetivo': cargo,
+                    'localizacao': localizacao,
+                    'total_vagas_desejadas': quantidade
+                },
+                'estatisticas': {
+                    'totalVagas': total_vagas,
+                    'vagasAnalisadas': total_vagas,
+                    'successRate': 100 if total_vagas > 0 else 0,
+                    'tempoColeta': resultado_scraping.get('tempo_execucao', 'N/A')
+                },
+                'transparencia': {
+                    'fontes_utilizadas': ['LinkedIn via APIFY'],
+                    'metodo_coleta': 'APIFY LinkedIn Jobs Scraper',
+                    'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                    'observacoes': 'Dados reais coletados do LinkedIn via APIFY API',
+                    'actor_id': resultado_scraping.get('actor_id', 'N/A'),
+                    'run_id': resultado_scraping.get('run_id', 'N/A')
+                },
+                'vagas': vagas_processadas
+            }
+            
+            logger.info(f"✅ Coleta APIFY finalizada: {total_vagas} vagas")
+            return jsonify(resultado)
+        
+        else:
+            # Fallback para modo demonstração
+            logger.warning("⚠️ Scrapers não disponíveis - usando modo demonstração")
+            
+            # Simular coleta
+            vagas_demo = []
+            for i in range(1, min(quantidade + 1, 51)):
+                vaga = {
+                    'id': i,
+                    'titulo': f'{cargo} - Posição {i}',
+                    'empresa': f'Empresa Tech {i}',
+                    'localizacao': localizacao,
+                    'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas.',
+                    'link': f'https://linkedin.com/jobs/view/{1000000 + i}',
+                    'nivel': 'Pleno' if i % 3 == 0 else 'Júnior',
+                    'tipo': 'Híbrido' if i % 2 == 0 else 'Remoto'
+                }
+                vagas_demo.append(vaga)
+            
+            # Montar resposta demo
+            resultado = {
+                'demo_mode': True,
+                'fallback_local': True,
+                'id': f'local_{int(time.time())}',
+                'timestamp': datetime.now().isoformat(),
+                'parametros': {
+                    'area_interesse': area,
+                    'cargo_objetivo': cargo,
+                    'localizacao': localizacao,
+                    'total_vagas_desejadas': quantidade
+                },
+                'estatisticas': {
+                    'totalVagas': len(vagas_demo),
+                    'vagasAnalisadas': len(vagas_demo),
+                    'successRate': 100,
+                    'tempoColeta': '5 segundos (simulado)'
+                },
+                'transparencia': {
+                    'fontes_utilizadas': ['Dados simulados'],
+                    'metodo_coleta': 'Geração automática para demonstração',
+                    'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                    'observacoes': 'Dados simulados para demonstração do sistema'
+                },
+                'vagas': vagas_demo
+            }
+            
+            logger.info(f"✅ Demo finalizada: {len(vagas_demo)} vagas simuladas")
+            return jsonify(resultado)
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na coleta: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'error': 'Erro na coleta',
+            'message': str(e),
+            'demo_mode': False
+        }), 500
 
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 @cross_origin()
@@ -184,6 +365,24 @@ def collect_jobs_stream():
             'Access-Control-Allow-Headers': 'Content-Type'
         }
     )
+
+@app.route('/', methods=['GET'])
+def root():
+    """Endpoint raiz"""
+    apify_token = os.environ.get('APIFY_API_TOKEN')
+    apify_status = "✅ CONFIGURADO" if apify_token else "❌ NÃO CONFIGURADO"
+    
+    return jsonify({
+        'service': 'HELIO Job Robot API',
+        'status': 'online',
+        'mode': 'APIFY REAL + DEMO FALLBACK',
+        'apify_status': apify_status,
+        'endpoints': [
+            '/api/health',
+            '/api/agent1/collect-keywords',
+            '/api/agent1/collect-jobs-stream'
+        ]
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

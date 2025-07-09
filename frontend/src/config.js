@@ -6,7 +6,11 @@ const config = {
     : 'http://localhost:8080',
   
   endpoints: {
-    collectKeywords: '/api/agent1/collect-keywords',
+    agent1: {
+      collectKeywords: '/api/agent1/collect-keywords',
+      collectKeywordsStream: '/api/agent1/collect-keywords',
+      collectJobsDemo: '/api/agent1/collect-keywords'
+    },
     health: '/api/health'
   }
 };
