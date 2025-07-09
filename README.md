@@ -118,3 +118,4 @@ robo-empregos/
 
 **Desenvolvido com 💙 para revolucionar transições de carreira** # Railway deploy trigger
 # Force Railway deploy
+# Deploy trigger Tue Jul  8 21:26:27 -03 2025
