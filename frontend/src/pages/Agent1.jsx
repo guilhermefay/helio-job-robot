@@ -993,12 +993,12 @@ const Agent1 = () => {
       console.log(JSON.stringify(requestData, null, 2))
       
       console.log('🌐 Configuração de endpoints:')
-      console.log('API_URL:', config.API_URL)
-      console.log('Endpoint coleta:', config.endpoints.agent1.collectJobs)
+      console.log('Base URL:', config.baseURL)
+      console.log('Endpoint coleta:', config.endpoints.agent1.collectKeywordsStream)
 
       setCurrentStep(2)
 
-      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', config.endpoints.agent1.collectJobs)
+      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', `${config.baseURL}${config.endpoints.agent1.collectKeywordsStream}`)
       console.log('📡 Método: POST')
       console.log('📋 Headers: Content-Type: application/json')
       console.log('⏰ Timestamp:', new Date().toISOString())
