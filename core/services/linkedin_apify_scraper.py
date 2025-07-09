@@ -177,6 +177,34 @@ class LinkedInApifyScraper:
             print(f"🚨 Erro no scraping LinkedIn: {e}")
             return self._dados_fallback_linkedin()
     
+    def _processar_vaga_linkedin(self, job_data: Dict) -> Dict[str, Any]:
+        """
+        Processa uma única vaga do LinkedIn/Apify para o formato padrão
+        """
+        try:
+            vaga = {
+                "titulo": job_data.get('title', job_data.get('jobTitle', 'Título não disponível')),
+                "empresa": job_data.get('companyName', job_data.get('company', 'Empresa não informada')),
+                "localizacao": job_data.get('location', 'Local não informado'),
+                "descricao": job_data.get('description', job_data.get('jobDescription', 'Descrição não disponível')),
+                "fonte": "linkedin_apify",
+                "url": job_data.get('link', job_data.get('jobUrl', '')),
+                "data_coleta": datetime.now().isoformat(),
+                "data_publicacao": job_data.get('postedTime', job_data.get('publishedAt', '')),
+                "salario": job_data.get('salary', ''),
+                "tipo_emprego": job_data.get('contractType', job_data.get('employmentType', '')),
+                "nivel_experiencia": job_data.get('seniorityLevel', job_data.get('experienceLevel', '')),
+                "empresa_logo": job_data.get('companyLogo', ''),
+                "empresa_linkedin": job_data.get('companyLink', job_data.get('companyUrl', '')),
+                "apify_real": True  # Marca como dados reais do Apify
+            }
+            
+            return vaga
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao processar vaga individual: {e}")
+            return None
+    
     def _processar_resultados_apify(self, items: List[Dict], cargo_pesquisado: str) -> List[Dict[str, Any]]:
         """
         Processa os resultados do Apify para o formato padrão
