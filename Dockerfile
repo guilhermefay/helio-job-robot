@@ -25,4 +25,4 @@ RUN useradd --create-home --shell /bin/bash app \
 USER app
 
 # Command to run the Flask streaming application with Railway's PORT
-CMD gunicorn app_streaming:app --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 120 --log-level info 
+CMD ["sh", "-c", "gunicorn app_streaming:app --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 120 --log-level info"] 
