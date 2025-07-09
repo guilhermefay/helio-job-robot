@@ -993,12 +993,12 @@ const Agent1 = () => {
       console.log(JSON.stringify(requestData, null, 2))
       
       console.log('🌐 Configuração de endpoints:')
-      console.log('API_URL:', config.API_URL)
-      console.log('Endpoint coleta:', config.endpoints.agent1.collectJobs)
+      console.log('API_URL:', config.baseURL)
+      console.log('Endpoint coleta:', config.endpoints.agent1.collectKeywords)
 
       setCurrentStep(2)
 
-      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', config.endpoints.agent1.collectJobs)
+      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', `${config.baseURL}${config.endpoints.agent1.collectKeywords}`)
       console.log('📡 Método: POST')
       console.log('📋 Headers: Content-Type: application/json')
       console.log('⏰ Timestamp:', new Date().toISOString())
@@ -1040,7 +1040,7 @@ const Agent1 = () => {
         
         if (shouldUseDemo) {
           console.log('🎭 Mudando para modo DEMO...')
-          console.log('Endpoint DEMO:', config.endpoints.agent1.collectJobsDemo)
+          console.log('Endpoint DEMO:', config.endpoints.agent1.collectKeywords)
           response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
             method: 'POST',
             headers: {
