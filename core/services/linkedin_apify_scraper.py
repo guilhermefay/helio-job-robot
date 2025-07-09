@@ -115,7 +115,7 @@ class LinkedInApifyScraper:
                     elif status in ["FAILED", "ABORTED", "TIMED-OUT"]:
                         print(f"❌ Scraping falhou: {status}")
                         return self._dados_fallback_linkedin()
-                else:
+                    else:
                     print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
             
             if attempt >= max_attempts:
@@ -172,7 +172,7 @@ class LinkedInApifyScraper:
             print(f"🎉 RESULTADO FINAL: {len(processed_jobs)} vagas processadas!")
             print(f"📈 Taxa de sucesso: {len(processed_jobs)/len(vagas_finais)*100:.1f}%")
             return processed_jobs
-            
+                
         except Exception as e:
             print(f"🚨 Erro no scraping LinkedIn: {e}")
             return self._dados_fallback_linkedin()

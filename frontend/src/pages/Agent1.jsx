@@ -888,7 +888,7 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
-const ProgressTimer = ({ isActive, maxMinutes = 7 }) => {
+const ProgressTimer = ({ isActive, maxMinutes = 7, searchConfig = {} }) => {
   const [timeElapsed, setTimeElapsed] = useState(0)
   const [progress, setProgress] = useState(0)
   
@@ -969,7 +969,7 @@ const ProgressTimer = ({ isActive, maxMinutes = 7 }) => {
             </div>
             <div className="flex items-center">
               <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Executando busca inteligente por "{searchConfig.cargo}" em "{searchConfig.localizacao}"</span>
+              <span>Executando busca inteligente por "{searchConfig.cargo || 'cargo'}" em "{searchConfig.localizacao || 'localização'}"</span>
             </div>
             <div className="flex items-center">
               <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
@@ -998,7 +998,7 @@ const ProgressTimer = ({ isActive, maxMinutes = 7 }) => {
             <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p className="text-sm text-amber-700">
                 ⏳ <strong>Quase lá!</strong> O Apify está coletando muitas vagas. 
-                Isso é ótimo - significa que há muitas oportunidades para "{searchConfig.cargo}"!
+                Isso é ótimo - significa que há muitas oportunidades para "{searchConfig.cargo || 'esta área'}"!
               </p>
             </div>
           )}
@@ -1296,7 +1296,7 @@ const Agent1 = () => {
 
     console.log('✅ Campos validados com sucesso')
     console.log('🔄 Configurando estado inicial...')
-    
+
     setIsProcessing(true)
     setError(null)
     setResults(null)
@@ -1387,7 +1387,7 @@ const Agent1 = () => {
         
         let errorMessage = 'Erro na coleta de vagas'
         try {
-          const errorData = await response.json()
+        const errorData = await response.json()
           console.log('Dados de erro:', errorData)
           errorMessage = errorData.error || errorMessage
         } catch (e) {

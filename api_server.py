@@ -83,7 +83,8 @@ def collect_jobs_stream():
             
             logger.info("🚀 INICIANDO STREAMING DE COLETA DE VAGAS")
             
-            data = request.get_json()
+            # Capturar dados do request no contexto correto
+            data = request.get_json() if request else None
             
             if not data:
                 error_msg = "❌ Dados não fornecidos na requisição"
