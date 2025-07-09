@@ -52,11 +52,36 @@ CORS(app,
 
 @app.after_request
 def after_request(response):
-    """Log CORS requests for debugging"""
+    """Ensure CORS headers are always sent"""
     origin = request.headers.get('Origin')
     if origin:
         logger.info(f"🌐 CORS Debug - Origin: {origin}, Method: {request.method}, Path: {request.path}")
+        # Explicitly set CORS headers for known origins
+        allowed_origins = [
+            'https://agenteslinkedin.vercel.app',
+            'https://helio-job-robot.vercel.app',
+            'http://localhost:3000',
+            'http://localhost:3001'
+        ]
+        if origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
+
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint"""
+    return jsonify({
+        'service': 'helio-job-robot',
+        'status': 'running',
+        'endpoints': [
+            '/api/health',
+            '/api/agent1/collect-keywords',
+            '/api/agent1/collect-jobs-stream'
+        ]
+    })
 
 @app.route('/api/health', methods=['GET'])
 def health():
