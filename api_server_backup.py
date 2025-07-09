@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-API HELIO - Integração REAL com APIFY LinkedIn Scraper
+API HELIO - Streaming de Coleta de Vagas com LOGS DETALHADOS
+Versão simplificada para Railway - sempre modo demo
 """
 import os
 import sys
@@ -18,20 +19,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Adicionar path para os módulos do projeto
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-
-# Importar serviço APIFY
-from core.services.linkedin_apify_scraper import LinkedInApifyScraper
-
 app = Flask(__name__)
 
-# Configuração CORS para Vercel
+# Configuração CORS mais abrangente para Vercel e desenvolvimento
 CORS(app, 
      origins=[
          'https://agenteslinkedin.vercel.app',
          'https://helio-job-robot.vercel.app', 
-         'https://helio-job-robot-*.vercel.app',
+         'https://helio-job-robot-*.vercel.app',  # Domínios de preview do Vercel
          'http://localhost:3000',
          'http://localhost:3001'
      ], 
@@ -50,8 +45,10 @@ def after_request(response):
         'http://localhost:3001'
     ]
     
+    # Log para debug do CORS
     logger.info(f"🌐 CORS Debug - Origin: {origin}")
     
+    # Verificar origem exata ou padrão do Vercel
     if origin in allowed_origins or (origin and 'helio-job-robot' in origin and 'vercel.app' in origin):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
@@ -66,35 +63,53 @@ def after_request(response):
 @app.route('/api/health', methods=['GET'])
 @cross_origin()
 def health():
-    """Health check com status do APIFY"""
-    
-    apify_token = os.environ.get('APIFY_API_TOKEN')
-    apify_status = "configurado" if apify_token else "não configurado"
+    """Health check simplificado"""
     
     sistema_status = {
         'status': 'ok',
-        'service': 'helio-apify-api',
+        'service': 'helio-demo-api',
         'timestamp': datetime.now().isoformat(),
-        'versao': '3.0-apify-real',
-        'apify_status': apify_status,
+        'versao': '3.0-demo-only',
+        'modo': 'demo-always',
         'port': os.environ.get('PORT', '5000')
     }
     
-    logger.info(f"🏥 Health check OK - APIFY: {apify_status}")
+    logger.info(f"🏥 Health check OK - {sistema_status}")
     return jsonify(sistema_status)
+
+def gerar_vagas_demo(cargo, localizacao, quantidade):
+    """Gera vagas de demonstração"""
+    vagas_demo = []
+    for i in range(1, min(quantidade + 1, 101)):  # Máximo 100 vagas demo
+        vaga = {
+            'id': i,
+            'titulo': f'{cargo} - Posição {i}',
+            'empresa': f'Empresa Tech {i}',
+            'localizacao': localizacao,
+            'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas. Oportunidade em empresa inovadora.',
+            'link': f'https://linkedin.com/jobs/view/{1000000 + i}',
+            'nivel': 'Pleno' if i % 3 == 0 else 'Júnior',
+            'tipo': 'Híbrido' if i % 2 == 0 else 'Remoto',
+            'salario': f'R$ {4000 + (i * 100)},00' if i % 4 == 0 else '',
+            'data_publicacao': '2 dias atrás'
+        }
+        vagas_demo.append(vaga)
+    
+    return vagas_demo
 
 @app.route('/api/agent1/collect-keywords', methods=['POST', 'OPTIONS'])
 @cross_origin()
 def collect_keywords():
     """
-    🎯 ENDPOINT REAL PARA COLETA COM APIFY LINKEDIN SCRAPER
+    🎯 ENDPOINT DEMO PARA COLETA DE VAGAS E EXTRAÇÃO DE PALAVRAS-CHAVE
+    Sempre funciona em modo demonstração
     """
     
     if request.method == 'OPTIONS':
         return '', 200
     
     try:
-        logger.info("🎯 Iniciando coleta REAL com APIFY LinkedIn Scraper")
+        logger.info("🎯 Iniciando coleta DEMO de vagas e análise de palavras-chave")
         
         # Capturar dados da requisição
         data = request.get_json()
@@ -108,43 +123,18 @@ def collect_keywords():
         localizacao = data.get('localizacao', 'São Paulo')
         quantidade = data.get('total_vagas_desejadas', 20)
         
-        logger.info(f"📋 Parâmetros: cargo={cargo}, área={area}, local={localizacao}, qtd={quantidade}")
+        logger.info(f"📋 Parâmetros recebidos: cargo={cargo}, área={area}, local={localizacao}, qtd={quantidade}")
         
-        # Verificar token APIFY
-        apify_token = os.environ.get('APIFY_API_TOKEN')
-        if not apify_token:
-            logger.error("❌ APIFY_API_TOKEN não configurado!")
-            return jsonify({
-                'error': 'APIFY_API_TOKEN não configurado',
-                'message': 'Configure a variável de ambiente APIFY_API_TOKEN no Railway'
-            }), 500
+        # Simular tempo de processamento
+        time.sleep(2)
         
-        # Instanciar scraper APIFY
-        scraper = LinkedInApifyScraper()
+        # Gerar vagas demo
+        vagas_demo = gerar_vagas_demo(cargo, localizacao, quantidade)
         
-        # Executar coleta
-        logger.info("🚀 Iniciando scraping com APIFY...")
-        resultado_scraping = scraper.coletar_vagas(
-            cargo=cargo,
-            localizacao=localizacao,
-            total_vagas=quantidade
-        )
-        
-        if not resultado_scraping or not resultado_scraping.get('vagas'):
-            logger.error("❌ Nenhuma vaga coletada pelo APIFY")
-            return jsonify({
-                'error': 'Nenhuma vaga encontrada',
-                'message': 'O APIFY não retornou vagas para os parâmetros informados'
-            }), 404
-        
-        # Processar resultado
-        vagas_processadas = resultado_scraping['vagas']
-        total_vagas = len(vagas_processadas)
-        
-        # Montar resposta final
+        # Montar resposta
         resultado = {
-            'apify_mode': True,
-            'id': f'apify_{int(time.time())}',
+            'demo_mode': True,
+            'id': f'demo_{int(time.time())}',
             'timestamp': datetime.now().isoformat(),
             'parametros': {
                 'area_interesse': area,
@@ -153,47 +143,38 @@ def collect_keywords():
                 'total_vagas_desejadas': quantidade
             },
             'estatisticas': {
-                'totalVagas': total_vagas,
-                'vagasAnalisadas': total_vagas,
-                'successRate': 100 if total_vagas > 0 else 0,
-                'tempoColeta': resultado_scraping.get('tempo_execucao', 'N/A')
+                'totalVagas': len(vagas_demo),
+                'vagasAnalisadas': len(vagas_demo),
+                'successRate': 100,
+                'tempoColeta': 'Demo instantâneo'
             },
             'transparencia': {
-                'fontes_utilizadas': ['LinkedIn via APIFY'],
-                'metodo_coleta': 'APIFY LinkedIn Jobs Scraper',
+                'fontes_utilizadas': ['Demo'],
+                'metodo_coleta': 'Dados de demonstração',
                 'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
-                'observacoes': 'Dados reais coletados do LinkedIn via APIFY API',
-                'actor_id': resultado_scraping.get('actor_id', 'N/A'),
-                'run_id': resultado_scraping.get('run_id', 'N/A')
+                'observacoes': 'Este é um modo de demonstração. Configure APIFY_API_TOKEN para coleta real.'
             },
-            'vagas': vagas_processadas
+            'vagas': vagas_demo
         }
         
-        logger.info(f"✅ Coleta APIFY finalizada: {total_vagas} vagas")
+        logger.info(f"✅ Resposta demo criada: {len(vagas_demo)} vagas")
         return jsonify(resultado)
         
     except Exception as e:
-        logger.error(f"❌ Erro na coleta APIFY: {e}")
-        import traceback
-        traceback.print_exc()
-        
+        logger.error(f"❌ Erro no endpoint demo: {e}")
         return jsonify({
-            'error': 'Erro na coleta APIFY',
-            'message': str(e),
-            'apify_mode': True
+            'error': 'Erro interno do servidor',
+            'demo_mode': True,
+            'message': str(e)
         }), 500
 
 @app.route('/', methods=['GET'])
 def root():
     """Endpoint raiz"""
-    apify_token = os.environ.get('APIFY_API_TOKEN')
-    apify_status = "✅ CONFIGURADO" if apify_token else "❌ NÃO CONFIGURADO"
-    
     return jsonify({
         'service': 'HELIO Job Robot API',
         'status': 'online',
-        'mode': 'APIFY REAL',
-        'apify_status': apify_status,
+        'mode': 'demo',
         'endpoints': [
             '/api/health',
             '/api/agent1/collect-keywords'
@@ -202,6 +183,5 @@ def root():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    logger.info(f"🚀 Iniciando HELIO APIFY API na porta {port}")
-    logger.info(f"🔑 APIFY Token: {'✅ CONFIGURADO' if os.environ.get('APIFY_API_TOKEN') else '❌ NÃO CONFIGURADO'}")
+    logger.info(f"🚀 Iniciando HELIO Demo API na porta {port}")
     app.run(host='0.0.0.0', port=port, debug=False) 
