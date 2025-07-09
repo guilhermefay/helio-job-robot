@@ -1013,7 +1013,7 @@ const Agent1 = () => {
       
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 10000)
+          setTimeout(() => reject(new Error('Timeout')), 300000) // 5 minutos
         )
         
         const fetchPromise = fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
@@ -1267,6 +1267,16 @@ const Agent1 = () => {
                   </>
                 )}
               </button>
+              {isProcessing && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-600">
+                    🕒 A coleta de vagas reais do LinkedIn pode levar até 5 minutos.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Por favor, aguarde. Estamos buscando as melhores oportunidades para você...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         ) : collectionData && !results ? (
