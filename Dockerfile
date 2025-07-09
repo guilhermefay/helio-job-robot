@@ -24,8 +24,5 @@ RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-# Expose port
-EXPOSE 8000
-
-# Command to run the Flask streaming application
-CMD ["./start.sh"] 
+# Command to run the Flask streaming application with Railway's PORT
+CMD gunicorn app_streaming:app --bind 0.0.0.0:${PORT:-8080} --workers 1 --timeout 120 --log-level info 

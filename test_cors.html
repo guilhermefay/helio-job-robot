@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste CORS - HELIO Job Robot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .pending {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de CORS - HELIO Job Robot</h1>
+    <p>Este teste simula requisições do frontend Vercel para o backend Railway.</p>
+    
+    <h2>Endpoints para testar:</h2>
+    <button class="test-button" onclick="testEndpoint('/')">Testar /</button>
+    <button class="test-button" onclick="testEndpoint('/health')">Testar /health</button>
+    <button class="test-button" onclick="testEndpoint('/api/health')">Testar /api/health</button>
+    <button class="test-button" onclick="testEndpoint('/api/agent1/collect-keywords', 'POST')">Testar /api/agent1/collect-keywords (POST)</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://helio-job-robot-production.up.railway.app';
+        
+        async function testEndpoint(endpoint, method = 'GET') {
+            const resultsDiv = document.getElementById('results');
+            const testId = Date.now();
+            
+            // Criar div para este teste
+            const testDiv = document.createElement('div');
+            testDiv.id = `test-${testId}`;
+            testDiv.className = 'result pending';
+            testDiv.innerHTML = `
+                <strong>🔄 Testando ${method} ${API_URL}${endpoint}</strong>
+                <br>Origem simulada: https://agenteslinkedin.vercel.app
+                <br>Aguardando resposta...
+            `;
+            resultsDiv.insertBefore(testDiv, resultsDiv.firstChild);
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': 'https://agenteslinkedin.vercel.app'
+                    },
+                    mode: 'cors',
+                    credentials: 'include'
+                };
+                
+                if (method === 'POST') {
+                    options.body = JSON.stringify({
+                        area_interesse: "desenvolvedor",
+                        cargo_objetivo: "desenvolvedor",
+                        localizacao: "são paulo",
+                        total_vagas_desejadas: 5,
+                        segmentos_alvo: [],
+                        tipo_vaga: "hibrido"
+                    });
+                }
+                
+                console.log('Fazendo requisição:', { endpoint, method, options });
+                
+                const startTime = Date.now();
+                const response = await fetch(API_URL + endpoint, options);
+                const endTime = Date.now();
+                
+                const responseText = await response.text();
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch {
+                    responseData = responseText;
+                }
+                
+                testDiv.className = response.ok ? 'result success' : 'result error';
+                testDiv.innerHTML = `
+                    <strong>${response.ok ? '✅' : '❌'} ${method} ${API_URL}${endpoint}</strong>
+                    <br><strong>Status:</strong> ${response.status} ${response.statusText}
+                    <br><strong>Tempo:</strong> ${endTime - startTime}ms
+                    <br><strong>Headers CORS:</strong>
+                    <br>  - Access-Control-Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin') || 'NÃO DEFINIDO'}
+                    <br>  - Access-Control-Allow-Methods: ${response.headers.get('Access-Control-Allow-Methods') || 'NÃO DEFINIDO'}
+                    <br>  - Access-Control-Allow-Headers: ${response.headers.get('Access-Control-Allow-Headers') || 'NÃO DEFINIDO'}
+                    <br>  - Access-Control-Allow-Credentials: ${response.headers.get('Access-Control-Allow-Credentials') || 'NÃO DEFINIDO'}
+                    <br><strong>Resposta:</strong>
+                    <br>${JSON.stringify(responseData, null, 2)}
+                `;
+                
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                testDiv.className = 'result error';
+                testDiv.innerHTML = `
+                    <strong>❌ ERRO: ${method} ${API_URL}${endpoint}</strong>
+                    <br><strong>Erro:</strong> ${error.message}
+                    <br><strong>Tipo:</strong> ${error.name}
+                    <br><strong>Detalhes:</strong> ${error.stack ? error.stack.split('\n')[0] : 'Sem detalhes'}
+                    <br>
+                    <br><strong>Possíveis causas:</strong>
+                    <br>1. CORS bloqueado (preflight falhou)
+                    <br>2. Servidor não está respondendo
+                    <br>3. Endpoint não existe
+                    <br>4. Erro de rede
+                `;
+            }
+        }
+        
+        // Testar automaticamente o root ao carregar
+        window.onload = () => {
+            console.log('Página carregada, testando endpoint root...');
+            testEndpoint('/');
+        };
+    </script>
+</body>
+</html>
