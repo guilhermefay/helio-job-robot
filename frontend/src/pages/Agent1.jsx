@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import config from '../config'
 import {
@@ -10,13 +10,10 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   ChartBarIcon,
-  TagIcon,
   SparklesIcon,
   ArrowPathIcon,
-  ClockIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline'
-import ProgressStream from '../components/ProgressStream'
 
 // Header Component
 const Header = () => {
@@ -888,342 +885,22 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
-const ProgressTimer = ({ isActive, maxMinutes = 7, searchConfig = {} }) => {
-  const [timeElapsed, setTimeElapsed] = useState(0)
-  const [progress, setProgress] = useState(0)
-  
-  useEffect(() => {
-    if (!isActive) {
-      setTimeElapsed(0)
-      setProgress(0)
-      return
-    }
-    
-    const interval = setInterval(() => {
-      setTimeElapsed(prev => {
-        const newTime = prev + 1
-        const progressPercent = Math.min((newTime / (maxMinutes * 60)) * 100, 100)
-        setProgress(progressPercent)
-        return newTime
-      })
-    }, 1000)
-    
-    return () => clearInterval(interval)
-  }, [isActive, maxMinutes])
-  
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-  
-  if (!isActive) return null
-  
-  return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-4">
-      <div className="flex items-start space-x-4">
-        <div className="flex-shrink-0">
-          <div className="relative w-16 h-16">
-            <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#E5E7EB"
-                strokeWidth="8"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#3B82F6"
-                strokeWidth="8"
-                strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-                strokeLinecap="round"
-                className="transition-all duration-1000 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-sm font-bold text-blue-600">
-                {formatTime(timeElapsed)}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex-1">
-          <h4 className="text-lg font-semibold text-blue-900 mb-2">
-            🚀 Buscando vagas no LinkedIn via Apify...
-          </h4>
-          <p className="text-sm text-blue-700 mb-3">
-            <strong>Tempo estimado:</strong> 5-7 minutos para buscar até 20.000 vagas
-          </p>
-          
-          <div className="space-y-2 text-sm text-blue-600">
-            <div className="flex items-center">
-              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Conectando com LinkedIn via Apify...</span>
-            </div>
-            <div className="flex items-center">
-              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Executando busca inteligente por "{searchConfig.cargo || 'cargo'}" em "{searchConfig.localizacao || 'localização'}"</span>
-            </div>
-            <div className="flex items-center">
-              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Coletando informações detalhadas de cada vaga...</span>
-            </div>
-            <div className="flex items-center">
-              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
-              <span>Processando dados e aplicando filtros de qualidade</span>
-            </div>
-          </div>
-          
-          <div className="mt-4 bg-white rounded-lg p-3 border border-blue-200">
-            <div className="flex justify-between text-xs text-blue-600 mb-1">
-              <span>Progresso</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <div className="w-full bg-blue-100 rounded-full h-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-          
-          {timeElapsed > 300 && ( // Após 5 minutos
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-700">
-                ⏳ <strong>Quase lá!</strong> O Apify está coletando muitas vagas. 
-                Isso é ótimo - significa que há muitas oportunidades para "{searchConfig.cargo || 'esta área'}"!
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const StreamingJobCollection = ({ onJobsCollected, isVisible, onClose }) => {
-  const [status, setStatus] = useState('idle')
-  const [jobs, setJobs] = useState([])
-  const [progress, setProgress] = useState({
-    total: 0,
-    elapsed: 0,
-    message: 'Aguardando...'
-  })
-  const [eventSource, setEventSource] = useState(null)
-
-  const startStreaming = async (formData) => {
-    setStatus('connecting')
-    setJobs([])
-    setProgress({ total: 0, elapsed: 0, message: '🚀 Conectando...' })
-    
-    try {
-      // Iniciar streaming via EventSource
-      const es = new EventSource(`${config.API_URL}/api/agent1/collect-jobs-stream`, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      
-      // Enviar dados via POST separado (EventSource não suporta POST body)
-      await fetch(`${config.API_URL}/api/agent1/collect-jobs-stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Origin': window.location.origin
-        },
-        body: JSON.stringify(formData)
-      })
-      
-      es.onmessage = async (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          
-          if (data.type === 'nova_vaga') {
-            // Nova vaga coletada
-            setJobs(prev => [...prev, data.vaga])
-            setProgress(prev => ({ 
-              ...prev, 
-              total: data.total,
-              message: `📊 ${data.total} vagas coletadas...`
-            }))
-          } else if (data.status) {
-            // Update de status
-            setStatus(data.status)
-            setProgress(prev => ({
-              ...prev,
-              elapsed: data.elapsed_seconds || prev.elapsed,
-              total: data.total_vagas || prev.total,
-              message: data.message
-            }))
-            
-            if (data.status === 'concluido' || data.status === 'finalizado') {
-              // Coleta finalizada
-              if (data.vagas) {
-                setJobs(data.vagas)
-              }
-              onJobsCollected(jobs.length > 0 ? jobs : data.vagas || [])
-              es.close()
-              setEventSource(null)
-            } else if (data.status === 'erro') {
-              setStatus('error')
-              es.close()
-              setEventSource(null)
-            }
-          }
-        } catch (err) {
-          console.error('Erro ao processar evento:', err)
-        }
-      }
-      
-      es.onerror = (error) => {
-        console.error('Erro no EventSource:', error)
-        setStatus('error')
-        setProgress(prev => ({ ...prev, message: '❌ Erro na conexão' }))
-        es.close()
-        setEventSource(null)
-      }
-      
-      setEventSource(es)
-      
-    } catch (error) {
-      console.error('Erro ao iniciar streaming:', error)
-      setStatus('error')
-      setProgress(prev => ({ ...prev, message: '❌ Erro ao conectar' }))
-    }
-  }
-  
-  const stopStreaming = () => {
-    if (eventSource) {
-      eventSource.close()
-      setEventSource(null)
-    }
-    setStatus('stopped')
-    onClose()
-  }
-  
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-  
+const StreamingJobCollection = ({ isVisible, onClose }) => {
   if (!isVisible) return null
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">🚀 Coleta em Tempo Real</h3>
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold mb-2">Coletando Vagas...</h3>
+          <p className="text-gray-600 mb-4">Aguarde enquanto coletamos as vagas do mercado</p>
           <button 
-            onClick={stopStreaming}
-            className="text-gray-500 hover:text-gray-700"
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
-            ✕
+            Cancelar
           </button>
-        </div>
-        
-        {/* Progress Info */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium">{progress.message}</span>
-            <span className="text-sm text-gray-500">
-              {progress.elapsed > 0 && `⏱️ ${formatTime(progress.elapsed)}`}
-            </span>
-          </div>
-          
-          {/* Progress Bar */}
-          {status === 'executando' && (
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min((progress.elapsed / 420) * 100, 100)}%` }}
-              />
-            </div>
-          )}
-          
-          {/* Stats */}
-          <div className="flex justify-between mt-2 text-sm text-gray-600">
-            <span>📊 Vagas coletadas: {progress.total}</span>
-            <span>🎯 Estimativa: 5-7 minutos</span>
-          </div>
-        </div>
-        
-        {/* Jobs Table */}
-        <div className="overflow-y-auto max-h-96">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Cargo</th>
-                <th className="p-2 text-left">Empresa</th>
-                <th className="p-2 text-left">Local</th>
-                <th className="p-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.map((job, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50 animate-fade-in">
-                  <td className="p-2">{index + 1}</td>
-                  <td className="p-2 font-medium">{job.titulo}</td>
-                  <td className="p-2">{job.empresa}</td>
-                  <td className="p-2">{job.localizacao}</td>
-                  <td className="p-2">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                      ✅ Coletada
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              
-              {status === 'executando' && (
-                <tr>
-                  <td colSpan="5" className="p-4 text-center text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-                      <span>Aguardando mais vagas...</span>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Actions */}
-        <div className="mt-4 flex justify-between">
-          <div className="text-sm text-gray-500">
-            {status === 'concluido' && '✅ Coleta finalizada!'}
-            {status === 'error' && '❌ Erro na coleta'}
-            {status === 'executando' && '⏳ Coletando...'}
-          </div>
-          
-          <div className="space-x-2">
-            {status === 'executando' && (
-              <button
-                onClick={stopStreaming}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                🛑 Parar Coleta
-              </button>
-            )}
-            
-            {(status === 'concluido' || status === 'finalizado') && (
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-              >
-                ✅ Usar Resultados
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -1243,9 +920,7 @@ const Agent1 = () => {
   const [currentStep, setCurrentStep] = useState(0)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
-  const [useStreaming, setUseStreaming] = useState(true)
   const [isStreamActive, setIsStreamActive] = useState(false)
-  const [streamRequestData, setStreamRequestData] = useState(null)
   const [collectionData, setCollectionData] = useState(null) // Dados da coleta
   const [isAnalyzing, setIsAnalyzing] = useState(false) // Estado da análise
 
@@ -1489,149 +1164,12 @@ const Agent1 = () => {
     }
   }
 
-  const handleStartCollectionOld = async () => {
-    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
-      setError('Por favor, preencha todos os campos obrigatórios.')
-      return
-    }
-
-    setIsProcessing(true)
-    setError(null)
-    setResults(null)
-
-    if (useStreaming) {
-      // Usar novo endpoint com streaming
-      try {
-        const requestData = {
-          area_interesse: searchConfig.area.trim(),
-          cargo_objetivo: searchConfig.cargo.trim(),
-          localizacao: searchConfig.localizacao.trim(),
-          total_vagas_desejadas: searchConfig.quantidade,
-          segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
-        }
-
-        // Salvar dados da requisição e ativar o stream
-        setStreamRequestData(requestData)
-        setIsStreamActive(true)
-      } catch (err) {
-        setError(err.message)
-        setIsProcessing(false)
-      }
-    } else {
-      // Usar endpoint tradicional (mantido para compatibilidade)
-      setCurrentStep(1)
-      try {
-        const requestData = {
-          area_interesse: searchConfig.area.trim(),
-          cargo_objetivo: searchConfig.cargo.trim(),
-          localizacao: searchConfig.localizacao.trim(),
-          total_vagas_desejadas: searchConfig.quantidade,
-          segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : []
-        }
-
-        setCurrentStep(2)
-
-        const response = await fetch('http://localhost:5001/api/agent1/collect-keywords', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData)
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Erro na coleta de palavras-chave')
-        }
-
-        setCurrentStep(4)
-        const results = await response.json()
-        setCurrentStep(6)
-
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setCurrentStep(7)
-        
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setCurrentStep(8)
-
-        setResults(results)
-
-      } catch (err) {
-        console.error('Erro na coleta:', err)
-        setError(err.message || 'Erro ao coletar vagas. Verifique se o backend está rodando.')
-      } finally {
-        setIsProcessing(false)
-      }
-    }
-  }
-
   const canStartCollection = (
     searchConfig.area.trim() && 
     searchConfig.cargo.trim() && 
     searchConfig.localizacao.trim() && 
     !isProcessing
   )
-
-  // Handlers para Streaming  
-  const handleStartStreaming = () => {
-    console.log('🚀 Iniciando streaming...')
-    
-    // Validações
-    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
-      setError('Por favor, preencha todos os campos obrigatórios.')
-      return
-    }
-    
-    const requestData = {
-      area_interesse: searchConfig.area.trim(),
-      cargo_objetivo: searchConfig.cargo.trim(), 
-      localizacao: searchConfig.localizacao.trim(),
-      total_vagas_desejadas: searchConfig.quantidade,
-      tipo_contrato: 'CLT'
-    }
-    
-    console.log('📊 Dados para streaming:', requestData)
-    
-         setIsProcessing(true)
-     setError(null)
-     setResults(null)
-     setCollectionData(null)
-     setIsStreamActive(true)
-     setStreamRequestData(requestData)
-   }
-  
-  const handleStreamCompleteNew = (jobs) => {
-    console.log('✅ Streaming completo!', jobs.length, 'vagas')
-    
-    // Criar dados compatíveis com o formato esperado
-    const collectionResult = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      estatisticas: {
-        totalVagas: jobs.length,
-        fontes: [{
-          nome: 'LinkedIn Jobs (Streaming)',
-          vagas: jobs.length,
-          taxa: 95
-        }]
-      },
-      vagas: jobs,
-      demo_mode: false
-    }
-    
-    setCollectionData(collectionResult)
-    setIsStreamActive(false)
-    setIsProcessing(false)
-    
-    console.log(`✅ ${jobs.length} vagas coletadas via streaming!`)
-  }
-  
-  const handleStreamErrorNew = () => {
-    console.log('❌ Erro no streaming')
-    setError('Erro na coleta via streaming. Tente novamente.')
-    setIsStreamActive(false)
-    setIsProcessing(false)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">

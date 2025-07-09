@@ -78,7 +78,7 @@ const ProgressStream = ({ isActive, onComplete, onError, requestData }) => {
       clearInterval(progressInterval)
       clearInterval(jokeInterval)
     }
-  }, [isActive, progress, status])
+  }, [isActive, progress, status, frasesIA, frasesScraping])
 
   useEffect(() => {
     if (!isActive || !requestData) return

@@ -1,20 +1,16 @@
 // Configuração da API
-const API_URL = process.env.REACT_APP_API_URL || process.env.VITE_API_URL || 'https://helio-backend-production.up.railway.app';
-
-export default {
-  API_URL,
+const config = {
   endpoints: {
-    health: `${API_URL}/api/health`,
     agent0: {
-      analyzeCV: `${API_URL}/api/agent0/analyze-cv`
+      diagnostic: '/api/agent0/diagnostic',
+      uploadFiles: '/api/agent0/upload-files'
     },
     agent1: {
-      collectJobs: `${API_URL}/api/agent1/collect-jobs`,
-      collectJobsDemo: `${API_URL}/api/agent1/collect-jobs-demo`,
-      collectJobsStream: `${API_URL}/api/agent1/collect-jobs-stream`,
-      analyzeKeywords: `${API_URL}/api/agent1/analyze-keywords`,
-      collectKeywordsStream: `${API_URL}/api/agent1/collect-keywords-stream`
-    },
-    results: `${API_URL}/api/results`
+      collectKeywords: '/api/agent1/collect-keywords',
+      collectKeywordsStream: '/api/agent1/collect-keywords-stream',
+      getResults: '/api/agent1/results'
+    }
   }
-};
+}
+
+export default config

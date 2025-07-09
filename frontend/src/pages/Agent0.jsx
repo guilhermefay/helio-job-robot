@@ -6,7 +6,6 @@ import {
   DocumentTextIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  InformationCircleIcon,
   ChartBarIcon,
   UserCircleIcon,
   SparklesIcon,

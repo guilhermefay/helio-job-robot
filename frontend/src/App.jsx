@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom'
+import React from 'react'
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
 import { 
-  HomeIcon, 
   ChevronLeftIcon,
   SparklesIcon,
   UserGroupIcon
@@ -15,7 +14,7 @@ import Agent0 from './pages/Agent0'
 import Agent1 from './pages/Agent1'
 
 // Data
-import { agents, getActiveAgents, getComingSoonAgents } from './data/agents'
+import { getActiveAgents, getComingSoonAgents } from './data/agents'
 
 // Header Component
 const Header = ({ showBackButton = false, title = null }) => {
