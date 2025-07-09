@@ -35,7 +35,19 @@ except ImportError as e:
     SISTEMA_DISPONIVEL = False
 
 app = Flask(__name__)
-CORS(app, origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'])
+CORS(app, origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'], 
+     allow_headers=['Content-Type'], 
+     methods=['GET', 'POST', 'OPTIONS'])
+
+@app.after_request
+def after_request(response):
+    """Adiciona headers CORS em todas as respostas"""
+    origin = request.headers.get('Origin')
+    if origin in ['https://agenteslinkedin.vercel.app', 'http://localhost:3000']:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
 
 @app.route('/api/health', methods=['GET'])
 @cross_origin()

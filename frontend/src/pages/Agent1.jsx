@@ -1005,7 +1005,7 @@ const Agent1 = () => {
 
       // ETAPA 1: Coletar vagas
       // Primeiro tentar o endpoint real
-      let response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
+      let response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywordsStream}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
