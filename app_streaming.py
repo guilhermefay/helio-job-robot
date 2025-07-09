@@ -39,6 +39,7 @@ CORS(app,
          r"/api/*": {
              "origins": [
                  'https://agenteslinkedin.vercel.app',
+                 'https://linekdinagent.vercel.app',  # Nova origem
                  'https://helio-job-robot.vercel.app', 
                  'https://helio-job-robot-*.vercel.app',
                  'http://localhost:3000',
@@ -59,6 +60,7 @@ def after_request(response):
         # Explicitly set CORS headers for known origins
         allowed_origins = [
             'https://agenteslinkedin.vercel.app',
+            'https://linekdinagent.vercel.app',  # Nova origem
             'https://helio-job-robot.vercel.app',
             'http://localhost:3000',
             'http://localhost:3001'
