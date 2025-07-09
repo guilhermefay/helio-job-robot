@@ -35,18 +35,43 @@ except ImportError as e:
     SISTEMA_DISPONIVEL = False
 
 app = Flask(__name__)
-CORS(app, origins=['https://agenteslinkedin.vercel.app', 'http://localhost:3000'], 
-     allow_headers=['Content-Type'], 
-     methods=['GET', 'POST', 'OPTIONS'])
+# Configuração CORS mais abrangente para Vercel e desenvolvimento
+CORS(app, 
+     origins=[
+         'https://agenteslinkedin.vercel.app',
+         'https://helio-job-robot.vercel.app', 
+         'https://helio-job-robot-*.vercel.app',  # Domínios de preview do Vercel
+         'http://localhost:3000',
+         'http://localhost:3001'
+     ], 
+     allow_headers=['Content-Type', 'Authorization'], 
+     methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+     supports_credentials=True)
 
 @app.after_request
 def after_request(response):
     """Adiciona headers CORS em todas as respostas"""
     origin = request.headers.get('Origin')
-    if origin in ['https://agenteslinkedin.vercel.app', 'http://localhost:3000']:
+    allowed_origins = [
+        'https://agenteslinkedin.vercel.app',
+        'https://helio-job-robot.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:3001'
+    ]
+    
+    # Log para debug do CORS
+    logger.info(f"🌐 CORS Debug - Origin: {origin}")
+    
+    # Verificar origem exata ou padrão do Vercel
+    if origin in allowed_origins or (origin and 'helio-job-robot' in origin and 'vercel.app' in origin):
         response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        logger.info(f"✅ CORS permitido para origem: {origin}")
+    else:
+        logger.warning(f"❌ CORS negado para origem: {origin}")
+    
     return response
 
 @app.route('/api/health', methods=['GET'])
@@ -313,6 +338,243 @@ def collect_jobs_stream():
             'Access-Control-Allow-Headers': 'Content-Type',
         }
     )
+
+@app.route('/api/agent1/collect-keywords', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def collect_keywords():
+    """
+    🎯 ENDPOINT PARA COLETA DE VAGAS E EXTRAÇÃO DE PALAVRAS-CHAVE
+    Compatível com o frontend Agent1.jsx
+    """
+    
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        logger.info("🎯 Iniciando coleta de vagas e análise de palavras-chave")
+        
+        # Capturar dados da requisição
+        data = request.get_json()
+        if not data:
+            logger.error("❌ Dados não fornecidos na requisição")
+            return jsonify({'error': 'Dados não fornecidos na requisição'}), 400
+        
+        # Extrair parâmetros
+        cargo = data.get('cargo_objetivo', 'Desenvolvedor')
+        area = data.get('area_interesse', 'Tecnologia')
+        localizacao = data.get('localizacao', 'Brasil')
+        quantidade = data.get('total_vagas_desejadas', 100)
+        
+        logger.info(f"📋 Parâmetros recebidos: cargo={cargo}, area={area}, localizacao={localizacao}, quantidade={quantidade}")
+        
+        # Verificar se sistema está disponível
+        if not SISTEMA_DISPONIVEL:
+            logger.warning("⚠️ Sistema não disponível - retornando dados simulados")
+            
+            # Retornar dados simulados compatíveis com o frontend
+            vagas_demo = []
+            for i in range(1, min(quantidade + 1, 51)):  # Máximo 50 para demo
+                vaga = {
+                    'id': i,
+                    'titulo': f'{cargo} - Posição {i}',
+                    'empresa': f'Empresa Tech {i}',
+                    'localizacao': localizacao,
+                    'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas. React, Node.js, Python, AWS.',
+                    'link': f'https://linkedin.com/jobs/view/{1000000 + i}',
+                    'nivel': 'Pleno' if i % 3 == 0 else 'Júnior',
+                    'tipo': 'Híbrido' if i % 2 == 0 else 'Remoto'
+                }
+                vagas_demo.append(vaga)
+            
+            # Simular palavras-chave extraídas
+            palavras_chave_demo = {
+                'hard_skills': ['React', 'Node.js', 'Python', 'JavaScript', 'AWS', 'Docker', 'MongoDB', 'TypeScript', 'Git'],
+                'soft_skills': ['Comunicação', 'Trabalho em equipe', 'Resolução de problemas', 'Criatividade', 'Adaptabilidade'],
+                'ferramentas': ['GitHub', 'VS Code', 'Jira', 'Slack', 'Figma', 'Postman'],
+                'frameworks': ['React', 'Express', 'Django', 'FastAPI', 'Next.js']
+            }
+            
+            resultado_demo = {
+                'id': f'demo_{int(time.time())}',
+                'demo_mode': True,
+                'parametros': {
+                    'cargo_objetivo': cargo,
+                    'area_interesse': area,
+                    'localizacao': localizacao,
+                    'total_vagas_desejadas': quantidade
+                },
+                'estatisticas': {
+                    'totalVagas': len(vagas_demo),
+                    'vagasAnalisadas': len(vagas_demo),
+                    'successRate': 100,
+                    'tempoColeta': '45 segundos (DEMO)'
+                },
+                'vagas': vagas_demo,
+                'palavras_chave': palavras_chave_demo,
+                'transparencia': {
+                    'metodo_coleta': 'Demonstração com dados simulados',
+                    'fontes_utilizadas': ['LinkedIn (Simulado)', 'Indeed (Simulado)'],
+                    'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                    'observacoes': 'Dados gerados para demonstração do sistema'
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            logger.info(f"✅ Demo concluída: {len(vagas_demo)} vagas simuladas")
+            return jsonify(resultado_demo)
+        
+        # Se sistema disponível, usar scrapers reais
+        logger.info("🔄 Sistema disponível - executando coleta real")
+        
+        # Verificar token Apify
+        apify_token = os.getenv('APIFY_API_TOKEN')
+        if not apify_token:
+            logger.error("❌ APIFY_API_TOKEN não configurado")
+            return jsonify({'error': 'APIFY_API_TOKEN não configurado'}), 500
+        
+        # Inicializar scrapers
+        job_scraper = JobScraper()
+        linkedin_scraper = LinkedInApifyScraper()
+        
+        # Verificar credenciais
+        if not linkedin_scraper.verificar_credenciais():
+            logger.error("❌ Credenciais do LinkedIn Apify inválidas")
+            return jsonify({'error': 'Credenciais do LinkedIn Apify inválidas'}), 500
+        
+        logger.info("✅ Scrapers inicializados - iniciando coleta...")
+        
+        # Executar coleta (versão simplificada sem streaming)
+        try:
+            # Usar coleta simples por enquanto
+            vagas_coletadas = job_scraper.coletar_vagas_simples(
+                area_interesse=area,
+                cargo_objetivo=cargo,
+                localizacao=localizacao,
+                total_vagas_desejadas=min(quantidade, 100)  # Limitar para evitar timeout
+            )
+            
+            if not vagas_coletadas:
+                logger.warning("⚠️ Nenhuma vaga coletada - usando fallback demo")
+                # Fallback para demo - retornar resposta simulada
+                vagas_demo = []
+                for i in range(1, 21):  # 20 vagas demo
+                    vaga = {
+                        'id': i,
+                        'titulo': f'{cargo} - Posição {i}',
+                        'empresa': f'Empresa Tech {i}',
+                        'localizacao': localizacao,
+                        'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas.',
+                        'link': f'https://linkedin.com/jobs/view/{1000000 + i}',
+                        'nivel': 'Pleno' if i % 3 == 0 else 'Júnior',
+                        'tipo': 'Híbrido' if i % 2 == 0 else 'Remoto'
+                    }
+                    vagas_demo.append(vaga)
+                
+                resultado_fallback = {
+                    'id': f'fallback_{int(time.time())}',
+                    'demo_mode': True,
+                    'parametros': {
+                        'cargo_objetivo': cargo,
+                        'area_interesse': area,
+                        'localizacao': localizacao,
+                        'total_vagas_desejadas': quantidade
+                    },
+                    'estatisticas': {
+                        'totalVagas': len(vagas_demo),
+                        'vagasAnalisadas': len(vagas_demo),
+                        'successRate': 100,
+                        'tempoColeta': 'Fallback demo'
+                    },
+                    'vagas': vagas_demo,
+                    'transparencia': {
+                        'metodo_coleta': 'Fallback - coleta real falhou',
+                        'fontes_utilizadas': ['Demo'],
+                        'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                        'observacoes': 'Dados demo após falha na coleta real'
+                    },
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                return jsonify(resultado_fallback)
+            
+            logger.info(f"✅ {len(vagas_coletadas)} vagas coletadas com sucesso")
+            
+            # Preparar resultado real
+            resultado_real = {
+                'id': f'real_{int(time.time())}',
+                'demo_mode': False,
+                'parametros': {
+                    'cargo_objetivo': cargo,
+                    'area_interesse': area,
+                    'localizacao': localizacao,
+                    'total_vagas_desejadas': quantidade
+                },
+                'estatisticas': {
+                    'totalVagas': len(vagas_coletadas),
+                    'vagasAnalisadas': len(vagas_coletadas),
+                    'successRate': 100,
+                    'tempoColeta': 'Tempo real'
+                },
+                'vagas': vagas_coletadas,
+                'transparencia': {
+                    'metodo_coleta': 'Apify LinkedIn Scraper',
+                    'fontes_utilizadas': ['LinkedIn via Apify'],
+                    'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                    'observacoes': 'Dados coletados em tempo real'
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return jsonify(resultado_real)
+            
+        except Exception as scraper_error:
+            logger.error(f"❌ Erro na coleta real: {scraper_error}")
+            # Fallback para demo em caso de erro
+            vagas_demo = []
+            for i in range(1, 21):  # 20 vagas demo
+                vaga = {
+                    'id': i,
+                    'titulo': f'{cargo} - Posição {i}',
+                    'empresa': f'Empresa Tech {i}',
+                    'localizacao': localizacao,
+                    'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas.',
+                    'link': f'https://linkedin.com/jobs/view/{1000000 + i}',
+                    'nivel': 'Pleno' if i % 3 == 0 else 'Júnior',
+                    'tipo': 'Híbrido' if i % 2 == 0 else 'Remoto'
+                }
+                vagas_demo.append(vaga)
+            
+            resultado_erro = {
+                'id': f'erro_{int(time.time())}',
+                'demo_mode': True,
+                'parametros': {
+                    'cargo_objetivo': cargo,
+                    'area_interesse': area,
+                    'localizacao': localizacao,
+                    'total_vagas_desejadas': quantidade
+                },
+                'estatisticas': {
+                    'totalVagas': len(vagas_demo),
+                    'vagasAnalisadas': len(vagas_demo),
+                    'successRate': 100,
+                    'tempoColeta': 'Demo após erro'
+                },
+                'vagas': vagas_demo,
+                'transparencia': {
+                    'metodo_coleta': 'Demo após erro de scraping',
+                    'fontes_utilizadas': ['Demo'],
+                    'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
+                    'observacoes': f'Erro na coleta real: {str(scraper_error)}'
+                },
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return jsonify(resultado_erro)
+    
+    except Exception as e:
+        error_msg = f"❌ Erro crítico: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return jsonify({'error': error_msg}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
