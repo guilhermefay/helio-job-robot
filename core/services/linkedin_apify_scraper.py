@@ -116,7 +116,7 @@ class LinkedInApifyScraper:
                         print(f"❌ Scraping falhou: {status}")
                         return self._dados_fallback_linkedin()
                     else:
-                    print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
+                        print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
             
             if attempt >= max_attempts:
                 print("⏰ Timeout: Mas vamos tentar baixar o que conseguiu...")
