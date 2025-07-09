@@ -261,18 +261,18 @@ def collect_jobs_stream():
     if request.method == 'OPTIONS':
         return '', 200
     
+    # Obter dados ANTES do generator
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Dados não fornecidos'}), 400
+    
+    cargo = data.get('cargo_objetivo', 'Desenvolvedor')
+    area = data.get('area_interesse', 'Tecnologia')
+    localizacao = data.get('localizacao', 'São Paulo')
+    quantidade = data.get('total_vagas_desejadas', 20)
+    
     def generate_stream():
         try:
-            # Obter dados da requisição
-            data = request.get_json()
-            if not data:
-                yield f"data: {json.dumps({'error': 'Dados não fornecidos'})}\n\n"
-                return
-            
-            cargo = data.get('cargo_objetivo', 'Desenvolvedor')
-            area = data.get('area_interesse', 'Tecnologia')
-            localizacao = data.get('localizacao', 'São Paulo')
-            quantidade = data.get('total_vagas_desejadas', 20)
             
             # Enviar confirmação inicial
             yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
@@ -300,11 +300,10 @@ def collect_jobs_stream():
                 
                 # Iniciar coleta
                 try:
-                    run_id, dataset_id = job_scraper.iniciar_coleta_streaming(
-                        area_interesse=area,
-                        cargo_objetivo=cargo,
+                    run_id, dataset_id = linkedin_scraper.iniciar_execucao_apify(
+                        cargo=cargo,
                         localizacao=localizacao,
-                        total_vagas_desejadas=quantidade
+                        limite=quantidade
                     )
                     
                     yield f"data: {json.dumps({'status': 'coleta_iniciada', 'run_id': run_id, 'dataset_id': dataset_id, 'timestamp': datetime.now().isoformat()})}\n\n"
@@ -322,14 +321,14 @@ def collect_jobs_stream():
                             break
                         
                         # Verificar status
-                        status_run = job_scraper.verificar_status_run(run_id)
+                        status_run = linkedin_scraper.verificar_status_run(run_id)
                         yield f"data: {json.dumps({'status': 'monitorando', 'run_status': status_run, 'timestamp': datetime.now().isoformat()})}\n\n"
                         
                         # Contar resultados
-                        total_resultados = job_scraper.contar_resultados_dataset(dataset_id)
+                        total_resultados = linkedin_scraper.contar_resultados_dataset(dataset_id)
                         
                         if total_resultados > len(vagas_coletadas):
-                            novos_resultados = job_scraper.obter_resultados_parciais(dataset_id, len(vagas_coletadas), total_resultados - len(vagas_coletadas))
+                            novos_resultados = linkedin_scraper.obter_resultados_parciais(dataset_id, len(vagas_coletadas), quantidade)
                             
                             if novos_resultados:
                                 vagas_coletadas.extend(novos_resultados)
