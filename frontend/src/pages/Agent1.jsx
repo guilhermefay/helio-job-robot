@@ -957,7 +957,7 @@ const Agent1 = () => {
   }
 
   const handleStartCollection = async () => {
-    console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS')
+    console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS - v1.0.1')
     console.log('📋 Validando campos obrigatórios...')
     
     if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
