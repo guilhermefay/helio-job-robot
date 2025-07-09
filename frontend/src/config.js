@@ -12,7 +12,7 @@ const config = {
     },
     agent1: {
       collectKeywords: '/api/agent1/collect-keywords',
-      collectKeywordsStream: '/api/agent1/collect-keywords-stream',
+      collectKeywordsStream: '/api/agent1/collect-jobs-stream',
       getResults: '/api/agent1/results'
     }
   }
