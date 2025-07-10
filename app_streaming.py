@@ -255,15 +255,6 @@ def collect_keywords():
             'demo_mode': False
         }), 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint para Railway"""
-    return jsonify({
-        'status': 'healthy',
-        'service': 'helio-job-robot',
-        'timestamp': datetime.now().isoformat()
-    }), 200
-
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 def collect_jobs_stream():
     """Endpoint de streaming de coleta de vagas"""
