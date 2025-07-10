@@ -935,37 +935,44 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
           if (done) break
           
           buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
           
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6))
-                console.log('📨 Streaming data:', data)
-                
-                if (data.status) {
-                  setStatus(data.status)
-                  if (data.message) setMessage(data.message)
+          // Processar eventos SSE completos
+          const events = buffer.split('\n\n')
+          buffer = events.pop() || '' // Manter o último evento incompleto no buffer
+          
+          for (const event of events) {
+            const lines = event.split('\n')
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const jsonStr = line.slice(6)
+                  if (jsonStr.trim()) {
+                    const data = JSON.parse(jsonStr)
+                    console.log('📨 Streaming data:', data)
+                    
+                    if (data.status) {
+                      setStatus(data.status)
+                      if (data.message) setMessage(data.message)
+                    }
+                    
+                    if (data.type === 'novas_vagas') {
+                      setVagasColetadas(prev => [...prev, ...data.novas_vagas])
+                      setProgress(data.total_atual)
+                    }
+                    
+                    if (data.status === 'finalizado' && data.vagas) {
+                      onJobsCollected(data.vagas)
+                      return
+                    }
+                    
+                    if (data.error) {
+                      setError(data.error)
+                      return
+                    }
+                  }
+                } catch (err) {
+                  console.error('Erro ao processar stream:', err)
                 }
-                
-                if (data.type === 'novas_vagas') {
-                  setVagasColetadas(prev => [...prev, ...data.novas_vagas])
-                  setProgress(data.total_atual)
-                }
-                
-                if (data.status === 'finalizado' && data.vagas) {
-                  onJobsCollected(data.vagas)
-                  return
-                }
-                
-                if (data.error) {
-                  setError(data.error)
-                  return
-                }
-              } catch (err) {
-                console.error('Erro ao processar stream:', err)
-              }
             }
           }
         }
@@ -989,28 +996,68 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
   if (!isVisible) return null
   
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] flex flex-col">
+        {!error ? (
+          <>
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-semibold mb-2">Coletando Vagas em Tempo Real</h3>
+              <p className="text-gray-600">{message}</p>
+              <div className="flex items-center justify-center mt-3 space-x-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="text-sm font-medium text-gray-700">
+                  Status: <span className="text-blue-600">{status}</span>
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Vagas coletadas: <span className="text-green-600">{progress}</span>
+                </span>
+              </div>
+            </div>
+            
+            {/* Lista de vagas coletadas */}
+            {vagasColetadas.length > 0 && (
+              <div className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                  🔍 Vagas encontradas ({vagasColetadas.length}):
+                </h4>
+                <div className="space-y-2">
+                  {vagasColetadas.slice(-10).map((vaga, index) => (
+                    <div key={index} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 animate-fadeIn">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900 text-sm">{vaga.titulo || vaga.title}</h5>
+                          <p className="text-xs text-gray-600 mt-1">
+                            <span className="font-medium">{vaga.empresa || vaga.company}</span>
+                            {(vaga.localizacao || vaga.location) && ` • ${vaga.localizacao || vaga.location}`}
+                          </p>
+                        </div>
+                        <span className="text-xs text-blue-600 font-medium">
+                          #{vagasColetadas.length - 10 + index + 1}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {vagasColetadas.length > 10 && (
+                    <p className="text-center text-xs text-gray-500 mt-2">
+                      Mostrando as últimas 10 de {vagasColetadas.length} vagas...
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center">
+            <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2 text-red-600">Erro na Coleta</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+          </div>
+        )}
+        
         <div className="text-center">
-          {!error ? (
-            <>
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold mb-2">Coletando Vagas...</h3>
-              <p className="text-gray-600 mb-2">{message}</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Status: {status} | Vagas coletadas: {progress}
-              </p>
-            </>
-          ) : (
-            <>
-              <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-red-600">Erro na Coleta</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-            </>
-          )}
           <button 
             onClick={onClose}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             {error ? 'Fechar' : 'Cancelar'}
           </button>
