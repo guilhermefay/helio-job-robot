@@ -169,7 +169,7 @@ class LinkedInApifyScraper:
             if results_response.status_code != 200:
                 print(f"❌ Erro ao baixar resultados: {results_response.status_code}")
                 print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
-            return self._fallback_linkedin_data(cargo, localizacao, limite)
+                return self._fallback_linkedin_data(cargo, localizacao, limite)
             
             raw_jobs = results_response.json()
             total_encontradas = len(raw_jobs)
