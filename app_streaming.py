@@ -255,6 +255,15 @@ def collect_keywords():
             'demo_mode': False
         }), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint para Railway"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'helio-job-robot',
+        'timestamp': datetime.now().isoformat()
+    }), 200
+
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 def collect_jobs_stream():
     """Endpoint de streaming de coleta de vagas"""
@@ -361,7 +370,14 @@ def collect_jobs_stream():
                     # Finalizar
                     logger.info(f"🏁 Finalizando streaming com {len(vagas_coletadas)} vagas")
                     yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
-                    yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
+                    
+                    # Garantir que o evento final seja enviado
+                    try:
+                        yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
+                        logger.info("✅ Evento 'finalizado' enviado com sucesso")
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao enviar evento final: {e}")
+                        yield f"data: {json.dumps({'error': 'Erro ao finalizar', 'timestamp': datetime.now().isoformat()})}\n\n"
                     
                 except Exception as e:
                     yield f"data: {json.dumps({'error': f'Erro durante coleta: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
