@@ -100,7 +100,7 @@ class LinkedInApifyScraper:
                 print(f"❌ Erro ao iniciar scraping: {run_response.status_code}")
                 print(f"❌ Response body: {run_response.text}")
                 print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
-            return self._fallback_linkedin_data(cargo, localizacao, limite)
+                return self._fallback_linkedin_data(cargo, localizacao, limite)
             
             run_data = run_response.json()
             run_id = run_data["data"]["id"]
