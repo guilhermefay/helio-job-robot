@@ -497,7 +497,7 @@ def analyze_keywords_stream():
             
             modelos_disponiveis = []
             if extractor.gemini_model:
-                modelos_disponiveis.append('Gemini Pro')
+                modelos_disponiveis.append('Gemini 2.5 Flash')
             if extractor.anthropic_client:
                 modelos_disponiveis.append('Claude')
             if extractor.openai_client:

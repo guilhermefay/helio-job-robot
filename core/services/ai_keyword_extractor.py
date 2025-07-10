@@ -49,12 +49,12 @@ class AIKeywordExtractor:
                 print(f"❌ Erro ao inicializar OpenAI: {e}")
                 self.openai_client = None
         
-        # Google Gemini Pro (30k tokens input)
+        # Google Gemini 2.5 Flash (2M tokens input)
         if os.getenv('GOOGLE_API_KEY'):
             try:
                 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-                # Usando versão atual do Gemini
-                self.gemini_model = genai.GenerativeModel('gemini-1.5-pro')
+                # Usando Gemini 2.5 Flash (2025)
+                self.gemini_model = genai.GenerativeModel('gemini-2.5-flash')
                 print("✅ Gemini client inicializado com sucesso")
             except Exception as e:
                 print(f"❌ Erro ao inicializar Gemini: {e}")
@@ -115,14 +115,14 @@ class AIKeywordExtractor:
             print(f"   - GPT-4 configurado: {self.openai_client is not None}")
             print(f"   - Tamanho do texto: {len(texto_agregado)} caracteres")
             
-            # Preferência: Gemini 1.5 Pro (1M tokens) > Claude (200k) > GPT-4 (128k)
+            # Preferência: Gemini 2.5 Flash (2M tokens) > Claude (200k) > GPT-4 (128k)
             if self.gemini_model:
                 try:
                     if callback_progresso:
-                        await callback_progresso("Usando Google Gemini 1.5 Pro...")
-                    print(f"✅ Chamando Gemini 1.5 Pro...")
+                        await callback_progresso("Usando Google Gemini 2.5 Flash...")
+                    print(f"✅ Chamando Gemini 2.5 Flash...")
                     resultado = self._chamar_gemini(prompt)
-                    modelo_usado = "gemini-1.5-pro"
+                    modelo_usado = "gemini-2.5-flash"
                 except Exception as gemini_error:
                     print(f"⚠️ Gemini falhou: {gemini_error}")
                     print(f"🔄 Tentando com Claude como fallback...")
@@ -348,7 +348,7 @@ FORMATO JSON OBRIGATÓRIO:
             raise
     
     def _chamar_gemini(self, prompt: str) -> Dict[str, Any]:
-        """Chama API do Gemini 1.5 Pro para análise"""
+        """Chama API do Gemini 2.5 Flash para análise"""
         try:
             # Configuração otimizada para Gemini Pro
             response = self.gemini_model.generate_content(
@@ -360,7 +360,7 @@ FORMATO JSON OBRIGATÓRIO:
                 }
             )
             
-            # Com response_mime_type, o Gemini 2.5 Pro já retorna JSON estruturado
+            # Com response_mime_type, o Gemini 2.5 Flash já retorna JSON estruturado
             texto_resposta = response.text
             
             # Debug: imprimir primeiros caracteres da resposta
