@@ -503,7 +503,8 @@ def analyze_keywords_stream():
             if extractor.openai_client:
                 modelos_disponiveis.append('GPT-4')
             
-            yield f"data: {json.dumps({'status': 'modelos_encontrados', 'message': f'Modelos disponíveis: {", ".join(modelos_disponiveis)}', 'progress': 30, 'timestamp': datetime.now().isoformat()})}\n\n"
+            modelos_text = ", ".join(modelos_disponiveis)
+            yield f"data: {json.dumps({'status': 'modelos_encontrados', 'message': f'Modelos disponíveis: {modelos_text}', 'progress': 30, 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Etapa 3: Análise com IA
             yield f"data: {json.dumps({'status': 'analisando', 'message': 'Enviando vagas para análise com IA...', 'progress': 40, 'timestamp': datetime.now().isoformat()})}\n\n"
