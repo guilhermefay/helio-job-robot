@@ -989,7 +989,12 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
   const [isCancelling, setIsCancelling] = useState(false)
   
   const handleCancel = async () => {
+    console.log('🔴 BOTÃO CANCELAR CLICADO!')
+    console.log('📊 runId atual:', runId)
+    console.log('📊 abortController:', abortController)
+    
     if (!runId) {
+      console.log('⚠️ Sem run_id, apenas abortando fetch')
       // Se não temos run_id, apenas abortar o fetch
       if (abortController) {
         abortController.abort()
@@ -998,6 +1003,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
       return
     }
     
+    console.log('🚀 Tentando cancelar run_id:', runId)
     setIsCancelling(true)
     
     try {
@@ -1010,11 +1016,17 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
         body: JSON.stringify({ run_id: runId })
       })
       
+      console.log('📡 Response status:', response.status)
+      const responseData = await response.text()
+      console.log('📄 Response data:', responseData)
+      
       if (response.ok) {
         console.log('✅ Coleta cancelada com sucesso')
+      } else {
+        console.error('❌ Erro na resposta:', response.status, responseData)
       }
     } catch (err) {
-      console.error('Erro ao cancelar coleta:', err)
+      console.error('💥 Erro ao cancelar coleta:', err)
     }
     
     // Abortar o streaming também

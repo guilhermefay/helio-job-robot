@@ -32,18 +32,33 @@ class AIKeywordExtractor:
         
         # Claude (200k tokens de contexto)
         if os.getenv('ANTHROPIC_API_KEY'):
-            self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+            try:
+                self.anthropic_client = Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+                print("✅ Claude client inicializado com sucesso")
+            except Exception as e:
+                print(f"❌ Erro ao inicializar Claude: {e}")
+                self.anthropic_client = None
         
         # OpenAI GPT-4 Turbo (128k tokens)
         if os.getenv('OPENAI_API_KEY'):
-            openai.api_key = os.getenv('OPENAI_API_KEY')
-            self.openai_client = openai
+            try:
+                openai.api_key = os.getenv('OPENAI_API_KEY')
+                self.openai_client = openai
+                print("✅ OpenAI client inicializado com sucesso")
+            except Exception as e:
+                print(f"❌ Erro ao inicializar OpenAI: {e}")
+                self.openai_client = None
         
         # Google Gemini Pro (30k tokens input)
         if os.getenv('GOOGLE_API_KEY'):
-            genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-            # Usando versão stable do Gemini Pro
-            self.gemini_model = genai.GenerativeModel('gemini-pro')
+            try:
+                genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+                # Usando versão stable do Gemini Pro
+                self.gemini_model = genai.GenerativeModel('gemini-pro')
+                print("✅ Gemini client inicializado com sucesso")
+            except Exception as e:
+                print(f"❌ Erro ao inicializar Gemini: {e}")
+                self.gemini_model = None
     
     async def extrair_palavras_chave_ia(
         self, 
