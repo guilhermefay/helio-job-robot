@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import config from '../config'
-import ProgressStream from '../components/ProgressStream'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -886,6 +885,187 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
+const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchConfig }) => {
+  const [status, setStatus] = useState('iniciando')
+  const [message, setMessage] = useState('Preparando coleta...')
+  const [progress, setProgress] = useState(0)
+  const [vagasColetadas, setVagasColetadas] = useState([])
+  const [error, setError] = useState(null)
+  const [abortController, setAbortController] = useState(null)
+  
+  React.useEffect(() => {
+    if (!isVisible || !searchConfig) return
+    
+    // Usar fetch com streaming
+    const startStreaming = async () => {
+      const controller = new AbortController()
+      setAbortController(controller)
+      
+      try {
+        const requestData = {
+          area_interesse: searchConfig.area.trim(),
+          cargo_objetivo: searchConfig.cargo.trim(),
+          localizacao: searchConfig.localizacao.trim(),
+          total_vagas_desejadas: searchConfig.quantidade,
+          segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+          tipo_vaga: 'hibrido'
+        }
+        
+        console.log('🚀 Iniciando streaming com dados:', requestData)
+        
+        const response = await fetch(`${config.baseURL}/api/agent1/collect-jobs-stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        })
+        
+        if (!response.ok) {
+          throw new Error('Erro ao iniciar streaming')
+        }
+        
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          buffer += decoder.decode(value, { stream: true })
+          
+          // Processar eventos SSE completos
+          const events = buffer.split('\n\n')
+          buffer = events.pop() || '' // Manter o último evento incompleto no buffer
+          
+          for (const event of events) {
+            const lines = event.split('\n')
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const jsonStr = line.slice(6)
+                  if (jsonStr.trim()) {
+                    const data = JSON.parse(jsonStr)
+                    console.log('📨 Streaming data:', data)
+                    
+                    if (data.status) {
+                      setStatus(data.status)
+                      if (data.message) setMessage(data.message)
+                    }
+                    
+                    if (data.type === 'novas_vagas') {
+                      setVagasColetadas(prev => [...prev, ...data.novas_vagas])
+                      setProgress(data.total_atual)
+                    }
+                    
+                    if (data.status === 'finalizado' && data.vagas) {
+                      onJobsCollected(data.vagas)
+                      return
+                    }
+                    
+                    if (data.error) {
+                      setError(data.error)
+                      return
+                    }
+                  }
+                } catch (err) {
+                  console.error('Erro ao processar stream:', err)
+                }
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao iniciar streaming:', err)
+          setError(err.message)
+        }
+      }
+    }
+    
+    startStreaming()
+    
+    return () => {
+      if (abortController) {
+        abortController.abort()
+      }
+    }
+  }, [isVisible, searchConfig, onJobsCollected])
+  
+  if (!isVisible) return null
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] flex flex-col">
+        {!error ? (
+          <>
+            <div className="text-center mb-4">
+              <h3 className="text-xl font-semibold mb-2">Coletando Vagas em Tempo Real</h3>
+              <p className="text-gray-600">{message}</p>
+              <div className="flex items-center justify-center mt-3 space-x-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="text-sm font-medium text-gray-700">
+                  Status: <span className="text-blue-600">{status}</span>
+                </span>
+                <span className="text-sm font-medium text-gray-700">
+                  Vagas coletadas: <span className="text-green-600">{progress}</span>
+                </span>
+              </div>
+            </div>
+            
+            {/* Lista de vagas coletadas */}
+            {vagasColetadas.length > 0 && (
+              <div className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-gray-50">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                  🔍 Vagas encontradas ({vagasColetadas.length}):
+                </h4>
+                <div className="space-y-2">
+                  {vagasColetadas.slice(-10).map((vaga, index) => (
+                    <div key={index} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 animate-fadeIn">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900 text-sm">{vaga.titulo || vaga.title}</h5>
+                          <p className="text-xs text-gray-600 mt-1">
+                            <span className="font-medium">{vaga.empresa || vaga.company}</span>
+                            {(vaga.localizacao || vaga.location) && ` • ${vaga.localizacao || vaga.location}`}
+                          </p>
+                        </div>
+                        <span className="text-xs text-blue-600 font-medium">
+                          #{vagasColetadas.length - 10 + index + 1}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {vagasColetadas.length > 10 && (
+                    <p className="text-center text-xs text-gray-500 mt-2">
+                      Mostrando as últimas 10 de {vagasColetadas.length} vagas...
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center">
+            <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2 text-red-600">Erro na Coleta</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+          </div>
+        )}
+        
+        <div className="text-center">
+          <button 
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            {error ? 'Fechar' : 'Cancelar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Main Component
 const Agent1 = () => {
@@ -915,210 +1095,205 @@ const Agent1 = () => {
     'Finalizando análise'
   ]
 
-
-  // ===================================
-  // 🔥 FUNÇÃO PRINCIPAL DE COLETA 
-  // ===================================
-  const handleStartCollection = async () => {
-    console.log('🔥 BOTÃO CLICADO! Chamando handleStartCollection...')
+  const handleStreamComplete = (vagas) => {
+    console.log('✅ Stream completado com', vagas.length, 'vagas')
+    setIsStreamActive(false)
     
+    // Montar o resultado da coleta
+    const collectionResult = {
+      demo_mode: false,
+      id: `stream_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      parametros: {
+        area_interesse: searchConfig.area.trim(),
+        cargo_objetivo: searchConfig.cargo.trim(),
+        localizacao: searchConfig.localizacao.trim(),
+        total_vagas_desejadas: searchConfig.quantidade
+      },
+      estatisticas: {
+        totalVagas: vagas.length,
+        vagasAnalisadas: vagas.length,
+        successRate: 100,
+        tempoColeta: 'Via streaming'
+      },
+      transparencia: {
+        fontes_utilizadas: ['LinkedIn Jobs via Apify'],
+        metodo_coleta: 'Streaming em tempo real',
+        filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
+        observacoes: 'Coleta realizada via streaming'
+      },
+      vagas: vagas
+    }
+    
+    setCollectionData(collectionResult)
+    setIsProcessing(false)
+  }
+
+  const handleStreamError = (errorMessage) => {
+    setError(errorMessage)
+    setIsStreamActive(false)
+    setIsProcessing(false)
+  }
+
+  const handleStartCollection = async () => {
+    console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS - v1.0.1')
+    console.log('📋 Validando campos obrigatórios...')
+    
+    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
+      console.error('❌ ERRO: Campos obrigatórios não preenchidos')
+      console.log('Area:', searchConfig.area.trim())
+      console.log('Cargo:', searchConfig.cargo.trim()) 
+      console.log('Localização:', searchConfig.localizacao.trim())
+      setError('Por favor, preencha todos os campos obrigatórios.')
+      return
+    }
+
+    console.log('✅ Campos validados com sucesso')
+    console.log('🔄 Configurando estado inicial...')
+
+    setIsProcessing(true)
+    setError(null)
+    setResults(null)
+    setCollectionData(null)
+
+    // Sempre usar o novo fluxo de 2 etapas
+    setCurrentStep(1)
     try {
-      console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS')
-      console.log('📋 Validando campos obrigatórios...')
-      
-      // Validação de campos
-      if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
-        console.error('❌ ERRO: Campos obrigatórios não preenchidos')
-        setError('Por favor, preencha todos os campos obrigatórios')
-        setCurrentStep(1)
-        return
-      }
-      
-      console.log('✅ Campos validados com sucesso')
-      console.log('🔄 Configurando estado inicial...')
-      
-      // Reset estados
-      setError('')
-      setResults(null)
-      setIsProcessing(true) // Ativar processamento imediatamente
-      
-      // Preparar dados da requisição
       const requestData = {
         area_interesse: searchConfig.area.trim(),
         cargo_objetivo: searchConfig.cargo.trim(),
         localizacao: searchConfig.localizacao.trim(),
         total_vagas_desejadas: searchConfig.quantidade,
-        segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+        segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
         tipo_vaga: 'hibrido' // Adicionar tipo de vaga
       }
-      
+
       console.log('📦 Dados da requisição preparados:')
       console.log(JSON.stringify(requestData, null, 2))
       
       console.log('🌐 Configuração de endpoints:')
-      console.log('API_URL:', config.baseURL)
-      console.log('Endpoint coleta:', config.endpoints.agent1.collectKeywords)
+      console.log('Base URL:', config.baseURL)
+      console.log('Endpoint coleta:', config.endpoints.agent1.collectKeywordsStream)
 
       setCurrentStep(2)
 
-      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', `${config.baseURL}${config.endpoints.agent1.collectKeywords}`)
+      console.log('🔥 FAZENDO REQUISIÇÃO PARA:', `${config.baseURL}${config.endpoints.agent1.collectKeywordsStream}`)
       console.log('📡 Método: POST')
       console.log('📋 Headers: Content-Type: application/json')
       console.log('⏰ Timestamp:', new Date().toISOString())
-
-      // TENTAR STREAMING PRIMEIRO (SE DISPONÍVEL)
-      let response
-      let useLocalFallback = false
-      let streamingAvailable = false
       
-      // Verificar se o endpoint de streaming existe
-      try {
-        const streamEndpoint = `${config.baseURL}/api/agent1/collect-jobs-stream`
-        console.log('🌊 Tentando usar streaming em:', streamEndpoint)
-        
-        // Tentar OPTIONS para ver se o endpoint existe
-        const optionsResponse = await fetch(streamEndpoint, { method: 'OPTIONS' })
-        streamingAvailable = optionsResponse.ok
-        console.log('Streaming disponível?', streamingAvailable)
-      } catch (e) {
-        console.log('Streaming não disponível, usando método tradicional')
-        streamingAvailable = false
-      }
+      // Tentar usar streaming primeiro
+      console.log('🌊 Tentando usar streaming em:', `${config.baseURL}/api/agent1/collect-jobs-stream`)
+      console.log('Streaming disponível?', true)
       
-      if (streamingAvailable) {
-        // USAR STREAMING
-        setIsProcessing(true)
-        setIsStreamActive(true)
+      // Verificar se streaming está disponível
+      if (true) {
         console.log('🌊 Iniciando coleta com streaming...')
-        // O ProgressStream vai gerenciar a coleta
-        return // Deixar o ProgressStream gerenciar o resto
-      }
-      
-      // MÉTODO TRADICIONAL (sem streaming)
-      try {
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 600000) // 10 minutos
-        )
-        
-        const fetchPromise = fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData)
-        })
-        
-        response = await Promise.race([fetchPromise, timeoutPromise])
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-        
-        console.log('✅ Resposta recebida do backend')
-        
-      } catch (backendError) {
-        console.log('⚠️ Backend não disponível, usando fallback local:', backendError.message)
-        useLocalFallback = true
-      }
-      
-      // SE BACKEND NÃO FUNCIONOU, USAR DADOS LOCAIS
-      if (useLocalFallback) {
-        console.log('🎭 MODO FALLBACK LOCAL ATIVADO')
-        setCurrentStep(3)
-        // setProgress(50) // This state doesn't exist, so it's removed.
-        
-        // Simular tempo de processamento
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        
-        // Gerar dados locais
-        const vagasLocais = []
-        for (let i = 1; i <= Math.min(searchConfig.quantidade, 50); i++) {
-          const vaga = {
-            id: i,
-            titulo: `${searchConfig.cargo} - Posição ${i}`,
-            empresa: `Empresa Tech ${i}`,
-            localizacao: searchConfig.localizacao,
-            descricao: `Vaga para ${searchConfig.cargo} com experiência em tecnologias modernas. React, Node.js, Python, AWS.`,
-            link: `https://linkedin.com/jobs/view/${1000000 + i}`,
-            nivel: i % 3 === 0 ? 'Pleno' : 'Júnior',
-            tipo: i % 2 === 0 ? 'Híbrido' : 'Remoto',
-            salario: i % 4 === 0 ? `R$ ${4000 + (i * 100)},00` : '',
-            data_publicacao: '2 dias atrás'
-          }
-          vagasLocais.push(vaga)
-        }
-        
-        // Resultado local
-        const resultadoLocal = {
-          demo_mode: true,
-          fallback_local: true,
-          id: `local_${Date.now()}`,
-          parametros: requestData,
-          estatisticas: {
-            totalVagas: vagasLocais.length,
-            vagasAnalisadas: vagasLocais.length,
-            successRate: 100,
-            tempoColeta: 'Fallback local instantâneo'
-          },
-          transparencia: {
-            fontes_utilizadas: ['Dados locais'],
-            metodo_coleta: 'Fallback local (backend indisponível)',
-            filtros_aplicados: `Cargo: ${searchConfig.cargo}, Localização: ${searchConfig.localizacao}`,
-            observacoes: 'Backend temporariamente indisponível. Dados gerados localmente para demonstração.'
-          },
-          vagas: vagasLocais,
-          timestamp: new Date().toISOString()
-        }
-        
-        // setProgress(100) // This state doesn't exist, so it's removed.
-        setResults(resultadoLocal)
-        setCurrentStep(4)
-        
-        console.log('✅ Fallback local concluído:', vagasLocais.length, 'vagas')
+        setIsStreamActive(true)
+        // O streaming será gerenciado pelo StreamingJobCollection
         return
       }
+
+      // ETAPA 1: Coletar vagas
+      // Primeiro tentar o endpoint real
+      let response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywordsStream}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+      })
       
-      // PROCESSAR RESPOSTA DO BACKEND
-      // setProgress(75) // This state doesn't exist, so it's removed.
-      const data = await response.json()
+      console.log('📨 RESPOSTA RECEBIDA:')
+      console.log('Status:', response.status)
+      console.log('StatusText:', response.statusText)
+      console.log('OK:', response.ok)
+      console.log('Headers:', Object.fromEntries(response.headers.entries()))
       
-      console.log('📊 Dados recebidos do backend:')
-      console.log(data)
-      
-      // setProgress(100) // This state doesn't exist, so it's removed.
-      setResults(data)
+      // Se demorar muito ou falhar, sugerir modo demo
+      if (!response.ok || response.status === 500) {
+        console.log('⚠️ PROBLEMA NA RESPOSTA:')
+        console.log('Response OK:', response.ok)
+        console.log('Status:', response.status)
+        
+        try {
+          const errorText = await response.text()
+          console.log('Conteúdo da resposta de erro:', errorText)
+        } catch (e) {
+          console.log('Não foi possível ler o conteúdo da resposta de erro')
+        }
+        
+        const shouldUseDemo = window.confirm(
+          'A coleta de vagas reais está demorando ou falhou.\n\n' +
+          'Deseja usar o modo demonstração com vagas de exemplo?\n\n' +
+          'Isso permitirá testar o sistema completo.'
+        )
+        
+        if (shouldUseDemo) {
+          console.log('🎭 Mudando para modo DEMO...')
+          console.log('Endpoint DEMO:', config.endpoints.agent1.collectJobsDemo)
+          response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+          })
+          
+          console.log('📨 RESPOSTA DEMO:')
+          console.log('Status:', response.status)
+          console.log('OK:', response.ok)
+        }
+      }
+
+      if (!response.ok) {
+        console.error('❌ ERRO FINAL NA RESPOSTA:')
+        console.log('Status:', response.status)
+        console.log('StatusText:', response.statusText)
+        
+        let errorMessage = 'Erro na coleta de vagas'
+        try {
+        const errorData = await response.json()
+          console.log('Dados de erro:', errorData)
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          console.log('Não foi possível fazer parse do JSON de erro')
+          const errorText = await response.text()
+          console.log('Texto da resposta de erro:', errorText)
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      console.log('🎉 SUCESSO! Fazendo parse da resposta...')
       setCurrentStep(4)
+      const collectionResult = await response.json()
       
-      console.log('✅ COLETA CONCLUÍDA COM SUCESSO!')
-      console.log('📊 Total de vagas:', data.vagas?.length || 0)
+      console.log('📊 RESULTADO DA COLETA:')
+      console.log(JSON.stringify(collectionResult, null, 2))
       
-    } catch (error) {
-      console.log('💥 ERRO CAPTURADO NO CATCH:')
-      console.log('Tipo do erro:', error.constructor.name)
-      console.log('Mensagem:', error.message)
-      console.log('Stack:', error.stack)
-      console.log('Erro completo:', error)
+      // Salvar dados da coleta
+      setCollectionData(collectionResult)
+      setIsProcessing(false)
       
-      setError(`Erro durante a coleta: ${error.message}`)
-      setCurrentStep(1)
-      // setProgress(0) // This state doesn't exist, so it's removed.
+      // Mostrar aviso se for modo demo
+      if (collectionResult.demo_mode) {
+        console.log('🎭 MODO DEMO ATIVADO - Usando vagas de exemplo')
+      }
+      
+      // Mostrar vagas coletadas e botão para análise
+      console.log(`✅ ${collectionResult.estatisticas.totalVagas} vagas coletadas!`)
+      
+    } catch (err) {
+      console.error('💥 ERRO CAPTURADO NO CATCH:')
+      console.error('Tipo do erro:', err.constructor.name)
+      console.error('Mensagem:', err.message)
+      console.error('Stack:', err.stack)
+      console.error('Erro completo:', err)
+      
+      setError(err.message || 'Erro ao coletar vagas. Verifique se o backend está rodando.')
+      setIsProcessing(false)
     }
-  }
-
-  // Handlers para o streaming
-  const handleStreamComplete = (data) => {
-    console.log('🎉 Streaming concluído com sucesso!', data)
-    setIsStreamActive(false)
-    setIsProcessing(false)
-    setCollectionData(data)
-    setCurrentStep(4)
-  }
-
-  const handleStreamError = (error) => {
-    console.error('❌ Erro no streaming:', error)
-    setIsStreamActive(false)
-    setIsProcessing(false)
-    setError(error.message || 'Erro durante o streaming')
   }
 
   const handleAnalyzeKeywords = async () => {
@@ -1192,22 +1367,12 @@ const Agent1 = () => {
       <Header />
       
       {/* Progress Stream Modal */}
-      {console.log('🎯 isStreamActive:', isStreamActive, 'isProcessing:', isProcessing)}
-      {isStreamActive && (
-        <ProgressStream
-          isActive={isStreamActive}
-          requestData={{
-            area_interesse: searchConfig.area.trim(),
-            cargo_objetivo: searchConfig.cargo.trim(),
-            localizacao: searchConfig.localizacao.trim(),
-            total_vagas_desejadas: searchConfig.quantidade,
-            segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
-            tipo_vaga: 'hibrido'
-          }}
-          onComplete={handleStreamComplete}
-          onError={handleStreamError}
-        />
-      )}
+      <StreamingJobCollection 
+        isVisible={isStreamActive}
+        onJobsCollected={handleStreamComplete}
+        onClose={handleStreamError}
+        searchConfig={searchConfig}
+      />
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
@@ -1278,16 +1443,6 @@ const Agent1 = () => {
                   </>
                 )}
               </button>
-              {isProcessing && (
-                <div className="mt-4 text-center">
-                  <p className="text-sm text-gray-600">
-                    🕒 A coleta de vagas reais do LinkedIn pode levar até 10 minutos.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Por favor, aguarde. Estamos buscando as melhores oportunidades para você...
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         ) : collectionData && !results ? (
