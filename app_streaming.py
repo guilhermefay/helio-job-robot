@@ -146,6 +146,7 @@ def collect_keywords():
             
             # Executar coleta
             logger.info("🚀 Iniciando scraping com APIFY...")
+            logger.info(f"Token APIFY presente: {'Sim' if scraper.apify_token else 'Não'}")
             resultado_scraping = scraper.coletar_vagas_linkedin(
                 cargo=cargo,
                 localizacao=localizacao,

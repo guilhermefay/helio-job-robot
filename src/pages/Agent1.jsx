@@ -940,8 +940,7 @@ const Agent1 = () => {
       // Reset estados
       setError('')
       setResults(null)
-      setCurrentStep(2)
-      // setProgress(10) // This state doesn't exist, so it's removed.
+      setIsProcessing(true) // Ativar processamento imediatamente
       
       // Preparar dados da requisição
       const requestData = {
@@ -949,7 +948,7 @@ const Agent1 = () => {
         cargo_objetivo: searchConfig.cargo.trim(),
         localizacao: searchConfig.localizacao.trim(),
         total_vagas_desejadas: searchConfig.quantidade,
-        segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
+        segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
         tipo_vaga: 'hibrido' // Adicionar tipo de vaga
       }
       
@@ -1193,6 +1192,7 @@ const Agent1 = () => {
       <Header />
       
       {/* Progress Stream Modal */}
+      {console.log('🎯 isStreamActive:', isStreamActive, 'isProcessing:', isProcessing)}
       {isStreamActive && (
         <ProgressStream
           endpoint="/api/agent1/collect-jobs-stream"
