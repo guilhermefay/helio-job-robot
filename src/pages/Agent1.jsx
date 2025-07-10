@@ -973,9 +973,9 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                 } catch (err) {
                   console.error('Erro ao processar stream:', err)
                 }
+              }
             }
           }
-        }
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error('Erro ao iniciar streaming:', err)
