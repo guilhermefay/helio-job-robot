@@ -269,20 +269,79 @@ class LinkedInApifyScraper:
         Processa uma única vaga do LinkedIn/Apify para o formato padrão
         """
         try:
+            # Debug: mostrar primeiras chaves do item
+            print(f"🔍 Debug Catho - Chaves do item: {list(job_data.keys())[:10]}")
+            print(f"🔍 Debug Catho - Amostra: {json.dumps(job_data, indent=2, ensure_ascii=False)[:300]}")
+            
+            # Tentar múltiplos campos possíveis para cada informação
             vaga = {
-                "titulo": job_data.get('title', 'Título não disponível'),
-                "empresa": job_data.get('company', 'Empresa não informada'),
-                "localizacao": job_data.get('location', 'Local não informado'),
-                "descricao": job_data.get('description', 'Descrição não disponível'),
+                "titulo": (
+                    job_data.get('title') or 
+                    job_data.get('jobTitle') or 
+                    job_data.get('cargo') or 
+                    job_data.get('vaga') or
+                    job_data.get('name') or
+                    'Título não disponível'
+                ),
+                "empresa": (
+                    job_data.get('company') or 
+                    job_data.get('companyName') or 
+                    job_data.get('empresa') or 
+                    job_data.get('employer') or
+                    job_data.get('organization') or
+                    'Empresa não informada'
+                ),
+                "localizacao": (
+                    job_data.get('location') or 
+                    job_data.get('local') or 
+                    job_data.get('localizacao') or 
+                    job_data.get('city') or
+                    job_data.get('place') or
+                    'Local não informado'
+                ),
+                "descricao": (
+                    job_data.get('description') or 
+                    job_data.get('descricao') or 
+                    job_data.get('jobDescription') or 
+                    job_data.get('details') or
+                    job_data.get('text') or
+                    'Descrição não disponível'
+                ),
                 "fonte": "catho",
-                "url": job_data.get('url', ''),
+                "url": (
+                    job_data.get('url') or 
+                    job_data.get('link') or 
+                    job_data.get('jobUrl') or 
+                    job_data.get('href') or
+                    ''
+                ),
                 "data_coleta": datetime.now().isoformat(),
-                "data_publicacao": job_data.get('publishedDate', ''),
-                "salario": job_data.get('salary', 'Não informado'),
-                "tipo_emprego": job_data.get('contractType', 'Não especificado'),
-                "nivel_experiencia": job_data.get('experienceLevel', 'Não especificado'),
-                "beneficios": job_data.get('benefits', []),
-                "requisitos": job_data.get('requirements', ''),
+                "data_publicacao": (
+                    job_data.get('publishedDate') or 
+                    job_data.get('dataPublicacao') or 
+                    job_data.get('date') or
+                    ''
+                ),
+                "salario": (
+                    job_data.get('salary') or 
+                    job_data.get('salario') or 
+                    job_data.get('wage') or
+                    'Não informado'
+                ),
+                "tipo_emprego": (
+                    job_data.get('contractType') or 
+                    job_data.get('tipoContrato') or 
+                    job_data.get('type') or
+                    'Não especificado'
+                ),
+                "nivel_experiencia": (
+                    job_data.get('experienceLevel') or 
+                    job_data.get('nivel') or 
+                    job_data.get('level') or
+                    'Não especificado'
+                ),
+                "beneficios": job_data.get('benefits', job_data.get('beneficios', [])),
+                "requisitos": job_data.get('requirements', job_data.get('requisitos', '')),
                 "apify_real": True  # Marca como dados reais do Apify
             }
             
@@ -604,15 +663,22 @@ class LinkedInApifyScraper:
             if response.status_code == 200:
                 raw_jobs = response.json()
                 
+                print(f"📦 Obtidos {len(raw_jobs)} itens do dataset")
+                
                 # Processar vagas
                 vagas_processadas = []
-                for job in raw_jobs:
-                    vaga_processada = self._processar_vaga_linkedin(job)
-                    if vaga_processada:
-                        vagas_processadas.append(vaga_processada)
+                for i, job in enumerate(raw_jobs):
+                    if job and isinstance(job, dict):
+                        vaga_processada = self._processar_vaga_linkedin(job)
+                        if vaga_processada:
+                            vagas_processadas.append(vaga_processada)
+                    else:
+                        print(f"⚠️ Item {i} não é um dicionário válido: {type(job)}")
                 
+                print(f"✅ Processadas {len(vagas_processadas)} vagas válidas")
                 return vagas_processadas
             else:
+                print(f"❌ Erro HTTP {response.status_code} ao obter resultados")
                 return []
                 
         except Exception as e:
@@ -670,16 +736,22 @@ class LinkedInApifyScraper:
             if response.status_code == 200:
                 raw_jobs = response.json()
                 
+                print(f"📦 Total de itens no dataset: {len(raw_jobs)}")
+                
                 # Processar todas as vagas
                 vagas_processadas = []
-                for job in raw_jobs:
-                    vaga_processada = self._processar_vaga_linkedin(job)
-                    if vaga_processada:
-                        vagas_processadas.append(vaga_processada)
+                for i, job in enumerate(raw_jobs):
+                    if job and isinstance(job, dict):
+                        vaga_processada = self._processar_vaga_linkedin(job)
+                        if vaga_processada:
+                            vagas_processadas.append(vaga_processada)
+                    else:
+                        print(f"⚠️ Item {i} não é um dicionário válido: {type(job)}")
                 
-                print(f"✅ Total processado: {len(vagas_processadas)} vagas")
+                print(f"✅ Total processado: {len(vagas_processadas)} vagas válidas de {len(raw_jobs)} itens")
                 return vagas_processadas
             else:
+                print(f"❌ Erro HTTP {response.status_code} ao obter todos os resultados")
                 return []
                 
         except Exception as e:
