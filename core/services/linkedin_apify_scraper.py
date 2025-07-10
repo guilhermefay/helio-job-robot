@@ -60,20 +60,19 @@ class LinkedInApifyScraper:
             return self._fallback_linkedin_data(cargo, localizacao, limite)
         
         try:
-            # 🔥 URL OTIMIZADA: Filtro últimos 7 dias para relevância
-            search_url = f"https://www.linkedin.com/jobs/search/?keywords={cargo}&location={localizacao}&f_TPR=r604800"
-            
-            # 🎯 INPUT OTIMIZADO: Para API, vamos ser mais rápidos
+            # 🎯 INPUT PARA CATHO: Mesmos parâmetros do iniciar_execucao_apify
             input_data = {
-                "urls": [search_url],
-                "numberOfJobsNeeded": min(limite * 3, 100),  # 🚀 Máximo 100 para API 
-                "scrapeCompanyDetails": True,
+                "search": cargo,  # Termo de busca
+                "keyword": cargo,  # Palavra-chave (fallback)
+                "location": localizacao,  # Local da vaga  
+                "city": localizacao,  # Cidade (fallback)
+                "maxItems": limite,  # Número máximo de itens
+                "maxResults": limite,  # Número máximo (fallback)
+                "maxPages": max(1, limite // 20),  # Páginas a percorrer
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
-                },
-                "timeout": 180,  # 🕐 3 minutos - mais rápido para API
-                "maxConcurrency": 5  # Mais concorrência para velocidade
+                }
             }
             
             print(f"🚀 Buscando MÁXIMO de vagas: {cargo} em {localizacao}")
@@ -486,15 +485,22 @@ class LinkedInApifyScraper:
         
         try:
             # Parâmetros para o actor da Catho easyapi
+            # Baseado em scrapers típicos da Catho
             actor_input = {
-                "keyword": cargo,  # Palavra-chave de busca
+                "search": cargo,  # Termo de busca
+                "keyword": cargo,  # Palavra-chave (fallback)
                 "location": localizacao,  # Local da vaga  
-                "maxResults": limite,  # Número máximo de vagas
+                "city": localizacao,  # Cidade (fallback)
+                "maxItems": limite,  # Número máximo de itens
+                "maxResults": limite,  # Número máximo (fallback)
+                "maxPages": max(1, limite // 20),  # Páginas a percorrer
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
                 }
             }
+            
+            print(f"📤 Enviando para Catho actor com input: {json.dumps(actor_input, indent=2)}")
             
             # Iniciar execução
             run_response = requests.post(
