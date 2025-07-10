@@ -343,7 +343,7 @@ def collect_jobs_stream():
                             # Buscar TODOS os resultados finais quando terminar
                             if status_run == 'SUCCEEDED':
                                 logger.info(f"✅ Run finalizada com sucesso! Buscando todos os resultados...")
-                                todos_resultados = linkedin_scraper.obter_todos_resultados_dataset(dataset_id)
+                                todos_resultados = linkedin_scraper.obter_todos_resultados(dataset_id)
                                 
                                 if todos_resultados and len(todos_resultados) > len(vagas_coletadas):
                                     logger.info(f"🎯 Encontrados {len(todos_resultados)} resultados totais (coletados: {len(vagas_coletadas)})")
