@@ -140,6 +140,25 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             <option value={1000}>1000 vagas (8-10 min)</option>
           </select>
         </div>
+
+        {/* Tipo de Vaga */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <BriefcaseIcon className="w-4 h-4 inline mr-1" />
+            Tipo de Vaga
+          </label>
+          <select
+            value={config.tipoVaga || 'todos'}
+            onChange={(e) => handleChange('tipoVaga', e.target.value)}
+            disabled={disabled}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+          >
+            <option value="todos">Todos os tipos</option>
+            <option value="presencial">Presencial</option>
+            <option value="remoto">Remoto</option>
+            <option value="hibrido">Híbrido</option>
+          </select>
+        </div>
       </div>
 
       {/* Segmentos */}
@@ -934,7 +953,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
           localizacao: searchConfig.localizacao.trim(),
           total_vagas_desejadas: searchConfig.quantidade,
           segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
-          tipo_vaga: 'hibrido'
+          tipo_vaga: searchConfig.tipoVaga || 'todos'
         }
         
         console.log('🚀 Iniciando streaming com dados:', requestData)
@@ -1101,7 +1120,8 @@ const Agent1 = () => {
     cargo: '',
     localizacao: '',
     quantidade: 100,
-    segmentos: ''
+    segmentos: '',
+    tipoVaga: 'todos'
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -1200,7 +1220,7 @@ const Agent1 = () => {
         localizacao: searchConfig.localizacao.trim(),
         total_vagas_desejadas: searchConfig.quantidade,
         segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
-        tipo_vaga: 'hibrido' // Adicionar tipo de vaga
+        tipo_vaga: searchConfig.tipoVaga // Usar tipo de vaga selecionado
       }
 
       console.log('📦 Dados da requisição preparados:')
