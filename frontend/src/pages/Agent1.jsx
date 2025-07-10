@@ -1252,7 +1252,7 @@ const Agent1 = () => {
 
   const stepLabels = [
     'Configurando busca',
-    'Coletando vagas do LinkedIn Jobs',
+    'Coletando vagas da Catho',
     'Coletando vagas do Google Jobs',
     'Coletando fontes complementares',
     'Extraindo palavras-chave',
@@ -1285,13 +1285,13 @@ const Agent1 = () => {
       },
       fontes: [
         {
-          nome: 'LinkedIn Jobs (Apify)',
+          nome: 'Catho (Legal)',
           vagas: vagas.length,
           taxa: 100
         }
       ],
       transparencia: {
-        fontes_utilizadas: ['LinkedIn Jobs via Apify'],
+        fontes_utilizadas: ['Catho'],
         metodo_coleta: 'Streaming em tempo real',
         filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
         observacoes: 'Coleta realizada via streaming'

@@ -301,22 +301,25 @@ class LinkedInApifyScraper:
         
         for item in items:
             try:
-                # O actor da Catho retorna campos neste formato
+                # Debug: ver estrutura dos dados
+                print(f"🔍 Debug item Catho: {json.dumps(item, indent=2, ensure_ascii=False)[:500]}")
+                
+                # O actor da Catho pode retornar campos em diferentes formatos
                 vaga = {
-                    "titulo": item.get('title', 'Título não disponível'),
-                    "empresa": item.get('company', 'Empresa não informada'),
-                    "localizacao": item.get('location', 'Local não informado'),
-                    "descricao": item.get('description', 'Descrição não disponível'),
+                    "titulo": item.get('jobTitle', item.get('title', item.get('cargo', 'Título não disponível'))),
+                    "empresa": item.get('companyName', item.get('company', item.get('empresa', 'Empresa não informada'))),
+                    "localizacao": item.get('location', item.get('local', item.get('localizacao', 'Local não informado'))),
+                    "descricao": item.get('description', item.get('descricao', item.get('jobDescription', 'Descrição não disponível'))),
                     "fonte": "catho",
-                    "url": item.get('url', ''),
+                    "url": item.get('url', item.get('link', item.get('jobUrl', ''))),
                     "data_coleta": datetime.now().isoformat(),
                     "cargo_pesquisado": cargo_pesquisado,
-                    "data_publicacao": item.get('publishedDate', ''),
-                    "salario": item.get('salary', 'Não informado'),
-                    "tipo_emprego": item.get('contractType', 'Não especificado'),
-                    "nivel_experiencia": item.get('experienceLevel', 'Não especificado'),
-                    "beneficios": item.get('benefits', []),
-                    "requisitos": item.get('requirements', ''),
+                    "data_publicacao": item.get('publishedDate', item.get('dataPublicacao', '')),
+                    "salario": item.get('salary', item.get('salario', 'Não informado')),
+                    "tipo_emprego": item.get('contractType', item.get('tipoContrato', 'Não especificado')),
+                    "nivel_experiencia": item.get('experienceLevel', item.get('nivel', 'Não especificado')),
+                    "beneficios": item.get('benefits', item.get('beneficios', [])),
+                    "requisitos": item.get('requirements', item.get('requisitos', '')),
                     "apify_real": True  # Marca como dados reais do Apify
                 }
                 
