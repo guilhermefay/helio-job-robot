@@ -846,7 +846,7 @@ const ResultsDisplay = ({ results }) => {
         <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200 p-6">
           <h3 className="text-lg font-semibold text-purple-900 mb-4 flex items-center">
             <SparklesIcon className="w-5 h-5 mr-2 text-purple-600" />
-            Insights da IA - {modelo_usado || 'Gemini 2.5 Pro'}
+            Insights da IA - {modelo_usado || 'Gemini 1.5 Pro'}
           </h3>
           
           <div className="space-y-4">
