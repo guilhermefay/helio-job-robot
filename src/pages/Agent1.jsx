@@ -987,6 +987,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
   const [abortController, setAbortController] = useState(null)
   const [runId, setRunId] = useState(null)
   const [isCancelling, setIsCancelling] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   
   const handleCancel = async () => {
     console.log('🔴 BOTÃO CANCELAR CLICADO!')
@@ -1107,6 +1108,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                     if (data.type === 'novas_vagas') {
                       setVagasColetadas(prev => [...prev, ...data.novas_vagas])
                       setProgress(data.total_atual)
+                      setIsInitialLoad(false)
                     }
                     
                     if (data.status === 'finalizado' && data.vagas) {
@@ -1165,7 +1167,26 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
             </div>
             
             {/* Lista de vagas coletadas */}
-            {vagasColetadas.length > 0 && (
+            {isInitialLoad && vagasColetadas.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center border rounded-lg p-8 mb-4 bg-gray-50">
+                <div className="text-center">
+                  <div className="animate-pulse mb-4">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full">
+                      <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Conectando ao Catho...
+                  </h4>
+                  <p className="text-xs text-gray-600">
+                    Aguarde enquanto iniciamos a busca por vagas
+                  </p>
+                </div>
+              </div>
+            ) : vagasColetadas.length > 0 ? (
               <div className="flex-1 overflow-y-auto border rounded-lg p-4 mb-4 bg-gray-50">
                 <h4 className="text-sm font-semibold text-gray-700 mb-3">
                   🔍 Vagas encontradas ({vagasColetadas.length}):
@@ -1194,7 +1215,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                   )}
                 </div>
               </div>
-            )}
+            ) : null}
           </>
         ) : (
           <div className="text-center">
