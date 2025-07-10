@@ -306,8 +306,8 @@ def collect_jobs_stream():
                 # Iniciar coleta
                 try:
                     run_id, dataset_id = linkedin_scraper.iniciar_execucao_apify(
-                        cargo=cargo,
-                        localizacao=localizacao,
+                        cargo=cargo.lower(),
+                        localizacao=localizacao.title(),
                         limite=quantidade
                     )
                     
