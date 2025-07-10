@@ -915,26 +915,6 @@ const Agent1 = () => {
     'Finalizando análise'
   ]
 
-  const handleStreamComplete = async (resultId) => {
-    try {
-      // Buscar resultado completo
-      const response = await fetch(`${config.baseURL}${config.endpoints.agent1.getResults}/${resultId}`)
-      const data = await response.json()
-      setResults(data)
-      setIsStreamActive(false)
-      setIsProcessing(false)
-    } catch (err) {
-      setError('Erro ao carregar resultados')
-      setIsStreamActive(false)
-      setIsProcessing(false)
-    }
-  }
-
-  const handleStreamError = (errorMessage) => {
-    setError(errorMessage)
-    setIsStreamActive(false)
-    setIsProcessing(false)
-  }
 
   // ===================================
   // 🔥 FUNÇÃO PRINCIPAL DE COLETA 
