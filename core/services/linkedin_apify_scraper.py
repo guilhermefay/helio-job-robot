@@ -62,13 +62,16 @@ class LinkedInApifyScraper:
         try:
             # 🎯 INPUT PARA CATHO: Mesmos parâmetros do iniciar_execucao_apify
             input_data = {
-                "search": cargo,  # Termo de busca
+                "query": cargo,  # Termo de busca principal
+                "search": cargo,  # Termo de busca (fallback)
                 "keyword": cargo,  # Palavra-chave (fallback)
                 "location": localizacao,  # Local da vaga  
                 "city": localizacao,  # Cidade (fallback)
+                "estado": "SP",  # Estado específico
                 "maxItems": limite,  # Número máximo de itens
                 "maxResults": limite,  # Número máximo (fallback)
                 "maxPages": max(1, limite // 20),  # Páginas a percorrer
+                "startPage": 1,  # Página inicial
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
@@ -251,29 +254,78 @@ class LinkedInApifyScraper:
         try:
             # Debug: ver estrutura dos dados
             print(f"🔍 DEBUG - Estrutura da vaga recebida:")
-            print(f"   Chaves: {list(job_data.keys())}")
-            print(f"   Título: {job_data.get('titulo', 'CAMPO NÃO EXISTE')}")
-            print(f"   Anunciante: {job_data.get('anunciante', 'CAMPO NÃO EXISTE')}")
-            if isinstance(job_data.get('anunciante'), dict):
-                print(f"   Anunciante.nome: {job_data.get('anunciante', {}).get('nome', 'SUBCAMPO NÃO EXISTE')}")
+            print(f"   Chaves: {list(job_data.keys())[:10]}")  # Primeiras 10 chaves
+            
+            # Verificar possíveis campos de título
+            titulo_campos = ['titulo', 'title', 'jobTitle', 'cargo', 'position', 'nome']
+            for campo in titulo_campos:
+                if campo in job_data:
+                    print(f"   Campo '{campo}' encontrado: {job_data.get(campo, '')[:50]}...")
+                    
+            # Verificar possíveis campos de empresa
+            empresa_campos = ['anunciante', 'empresa', 'company', 'employer', 'companyName']
+            for campo in empresa_campos:
+                if campo in job_data:
+                    print(f"   Campo '{campo}' encontrado: {str(job_data.get(campo))[:50]}...")
             
             # Mapeamento baseado na estrutura real do Catho
-            # Extrair informações da empresa
+            # Extrair informações da empresa com múltiplos fallbacks
             anunciante = job_data.get('anunciante', {})
             contratante = job_data.get('contratante', {})
-            empresa_nome = (
-                anunciante.get('nome') or 
-                contratante.get('nome') or 
-                'Empresa não informada'
-            )
             
-            # Extrair localização das vagas
+            # Tentar várias formas de obter o nome da empresa
+            empresa_nome = None
+            
+            # Se anunciante é dict
+            if isinstance(anunciante, dict):
+                empresa_nome = anunciante.get('nome') or anunciante.get('name')
+            # Se anunciante é string
+            elif isinstance(anunciante, str):
+                empresa_nome = anunciante
+                
+            # Se ainda não achou, tentar contratante
+            if not empresa_nome and isinstance(contratante, dict):
+                empresa_nome = contratante.get('nome') or contratante.get('name')
+            elif not empresa_nome and isinstance(contratante, str):
+                empresa_nome = contratante
+                
+            # Outros campos possíveis
+            if not empresa_nome:
+                empresa_nome = (
+                    job_data.get('empresa') or
+                    job_data.get('company') or
+                    job_data.get('companyName') or
+                    job_data.get('employer') or
+                    job_data.get('employerName') or
+                    'Empresa não informada'
+                )
+            
+            # Extrair localização das vagas com múltiplos fallbacks
+            localizacao = None
+            
+            # Tentar primeiro o array vagas
             vagas_info = job_data.get('vagas', [])
             if vagas_info and len(vagas_info) > 0:
                 vaga_local = vagas_info[0]
-                localizacao = f"{vaga_local.get('cidade', '')}, {vaga_local.get('uf', '')}"
-            else:
-                localizacao = 'Local não informado'
+                cidade = vaga_local.get('cidade', '')
+                uf = vaga_local.get('uf', '')
+                if cidade and uf:
+                    localizacao = f"{cidade}, {uf}"
+                elif cidade:
+                    localizacao = cidade
+                elif uf:
+                    localizacao = uf
+            
+            # Se não achou, tentar outros campos
+            if not localizacao:
+                localizacao = (
+                    job_data.get('location') or
+                    job_data.get('localizacao') or
+                    job_data.get('local') or
+                    job_data.get('cidade') or
+                    job_data.get('city') or
+                    'Local não informado'
+                )
             
             # Montar salário
             salario_info = job_data.get('faixaSalarial', '')
@@ -282,20 +334,49 @@ class LinkedInApifyScraper:
             if not salario_info:
                 salario_info = 'A combinar' if job_data.get('salarioACombinar') else 'Não informado'
             
+            # Extrair título com fallbacks
+            titulo = (
+                job_data.get('titulo') or 
+                job_data.get('title') or 
+                job_data.get('jobTitle') or 
+                job_data.get('cargo') or 
+                job_data.get('position') or
+                job_data.get('nome') or
+                'Título não disponível'
+            )
+            
+            # Extrair descrição com fallbacks
+            descricao = (
+                job_data.get('descricao') or 
+                job_data.get('description') or 
+                job_data.get('jobDescription') or
+                job_data.get('details') or
+                'Descrição não disponível'
+            )
+            
+            # Extrair URL com fallbacks
+            url = (
+                job_data.get('searchUrl') or
+                job_data.get('url') or
+                job_data.get('link') or
+                job_data.get('jobUrl') or
+                ''
+            )
+            
             vaga = {
-                "titulo": job_data.get('titulo', 'Título não disponível'),
+                "titulo": titulo,
                 "empresa": empresa_nome,
                 "localizacao": localizacao,
-                "descricao": job_data.get('descricao', 'Descrição não disponível'),
+                "descricao": descricao,
                 "fonte": "catho",
-                "url": job_data.get('searchUrl', ''),
+                "url": url,
                 "data_coleta": datetime.now().isoformat(),
-                "data_publicacao": job_data.get('data', ''),
+                "data_publicacao": job_data.get('data', job_data.get('datePosted', '')),
                 "salario": salario_info,
-                "tipo_emprego": job_data.get('regimeContrato', 'Não especificado'),
-                "nivel_experiencia": 'Não especificado',  # Catho não fornece este campo diretamente
-                "beneficios": job_data.get('benef', []),
-                "requisitos": '',  # Incluído na descrição
+                "tipo_emprego": job_data.get('regimeContrato', job_data.get('employmentType', 'Não especificado')),
+                "nivel_experiencia": job_data.get('level', 'Não especificado'),
+                "beneficios": job_data.get('benef', job_data.get('benefits', [])),
+                "requisitos": job_data.get('requirements', ''),
                 "horario": job_data.get('horario', ''),
                 "info_adicional": job_data.get('infoAdicional', ''),
                 "job_id": job_data.get('job_id', job_data.get('id', '')),
@@ -493,14 +574,18 @@ class LinkedInApifyScraper:
         try:
             # Parâmetros para o actor da Catho easyapi
             # Baseado em scrapers típicos da Catho
+            # IMPORTANTE: O campo de busca precisa ser bem específico
             actor_input = {
-                "search": cargo,  # Termo de busca
+                "query": cargo,  # Termo de busca principal
+                "search": cargo,  # Termo de busca (fallback)
                 "keyword": cargo,  # Palavra-chave (fallback)
                 "location": localizacao,  # Local da vaga  
                 "city": localizacao,  # Cidade (fallback)
+                "estado": "SP",  # Estado específico
                 "maxItems": limite,  # Número máximo de itens
                 "maxResults": limite,  # Número máximo (fallback)
                 "maxPages": max(1, limite // 20),  # Páginas a percorrer
+                "startPage": 1,  # Página inicial
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
