@@ -249,6 +249,13 @@ class LinkedInApifyScraper:
         Processa uma única vaga do LinkedIn/Apify para o formato padrão
         """
         try:
+            # Debug: ver estrutura dos dados
+            print(f"🔍 DEBUG - Estrutura da vaga recebida:")
+            print(f"   Chaves: {list(job_data.keys())}")
+            print(f"   Título: {job_data.get('titulo', 'CAMPO NÃO EXISTE')}")
+            print(f"   Anunciante: {job_data.get('anunciante', 'CAMPO NÃO EXISTE')}")
+            if isinstance(job_data.get('anunciante'), dict):
+                print(f"   Anunciante.nome: {job_data.get('anunciante', {}).get('nome', 'SUBCAMPO NÃO EXISTE')}")
             
             # Mapeamento baseado na estrutura real do Catho
             # Extrair informações da empresa
