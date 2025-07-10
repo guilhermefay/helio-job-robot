@@ -287,10 +287,14 @@ def collect_jobs_stream():
             yield f"data: {json.dumps({'status': 'config_ok', 'message': 'Configuração verificada', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar se os scrapers estão disponíveis
+            logger.info(f"JobScraper disponível: {JobScraper is not None}")
+            logger.info(f"LinkedInApifyScraper disponível: {LinkedInApifyScraper is not None}")
+            
             if JobScraper and LinkedInApifyScraper:
-                logger.info("Usando APIFY real")
+                logger.info("✅ Scrapers disponíveis - Usando APIFY real")
                 job_scraper = JobScraper()
                 linkedin_scraper = LinkedInApifyScraper()
+                logger.info(f"LinkedIn scraper token: {'PRESENTE' if linkedin_scraper.apify_token else 'AUSENTE'}")
                 
                 # Verificar credenciais
                 if not linkedin_scraper.verificar_credenciais():

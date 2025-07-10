@@ -46,9 +46,18 @@ class LinkedInApifyScraper:
             limite: Máximo de vagas (padrão: 800, usa todas se Apify trouxer mais)
         """
         
+        print("=" * 50)
+        print("🔍 INICIANDO coletar_vagas_linkedin")
+        print(f"📝 Parâmetros: cargo='{cargo}', localizacao='{localizacao}', limite={limite}")
+        print(f"🔑 Token APIFY: {'✅ PRESENTE' if self.apify_token else '❌ AUSENTE'}")
+        print(f"🔑 Token length: {len(self.apify_token) if self.apify_token else 0}")
+        print(f"🔑 Token preview: {self.apify_token[:10]}..." if self.apify_token else "N/A")
+        print("=" * 50)
+        
         if not self.apify_token:
             print("🚨 Token Apify não configurado. Usando fallback.")
-            return self._dados_fallback_linkedin()
+            print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
+            return self._fallback_linkedin_data(cargo, localizacao, limite)
         
         try:
             # 🔥 URL OTIMIZADA: Filtro últimos 7 dias para relevância
@@ -71,6 +80,9 @@ class LinkedInApifyScraper:
             print(f"📊 Limite do usuário: {limite} | Apify buscará: até 20.000!")
             
             # Iniciar execução
+            print(f"🌐 Fazendo request para Apify: {self.base_url}/acts/{self.actor_id}/runs")
+            print(f"📦 Input data: {json.dumps(input_data, indent=2)}")
+            
             run_response = requests.post(
                 f"{self.base_url}/acts/{self.actor_id}/runs",
                 headers={
@@ -81,9 +93,14 @@ class LinkedInApifyScraper:
                 timeout=30
             )
             
+            print(f"📡 Response status: {run_response.status_code}")
+            print(f"📡 Response headers: {dict(run_response.headers)}")
+            
             if run_response.status_code != 201:
                 print(f"❌ Erro ao iniciar scraping: {run_response.status_code}")
-                return self._dados_fallback_linkedin()
+                print(f"❌ Response body: {run_response.text}")
+                print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
+            return self._fallback_linkedin_data(cargo, localizacao, limite)
             
             run_data = run_response.json()
             run_id = run_data["data"]["id"]
@@ -116,7 +133,8 @@ class LinkedInApifyScraper:
                         break
                     elif status in ["FAILED", "ABORTED", "TIMED-OUT"]:
                         print(f"❌ Scraping falhou: {status}")
-                        return self._dados_fallback_linkedin()
+                        print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
+            return self._fallback_linkedin_data(cargo, localizacao, limite)
                 else:
                     print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
             
@@ -150,7 +168,8 @@ class LinkedInApifyScraper:
             
             if results_response.status_code != 200:
                 print(f"❌ Erro ao baixar resultados: {results_response.status_code}")
-                return self._dados_fallback_linkedin()
+                print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
+            return self._fallback_linkedin_data(cargo, localizacao, limite)
             
             raw_jobs = results_response.json()
             total_encontradas = len(raw_jobs)
@@ -195,7 +214,8 @@ class LinkedInApifyScraper:
                 
         except Exception as e:
             print(f"🚨 Erro no scraping LinkedIn: {e}")
-            return self._dados_fallback_linkedin()
+            print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
+            return self._fallback_linkedin_data(cargo, localizacao, limite)
 
     def _dados_fallback_linkedin(self) -> List[Dict[str, Any]]:
         """
@@ -380,16 +400,44 @@ class LinkedInApifyScraper:
     
     def verificar_credenciais(self) -> bool:
         """
-        Verifica se as credenciais do Apify estão configuradas
+        Verifica se as credenciais do Apify estão configuradas e válidas
         """
+        print("=" * 50)
+        print("🔐 VERIFICANDO CREDENCIAIS APIFY")
+        
         if not self.apify_token:
             print("❌ APIFY_API_TOKEN não encontrado!")
             print("📌 Configure no arquivo .env:")
             print("   APIFY_API_TOKEN=seu_token_aqui")
+            print("=" * 50)
             return False
         
-        print("✅ Token Apify configurado!")
-        return True
+        print(f"✅ Token presente: {len(self.apify_token)} caracteres")
+        
+        # Verificar se o token é válido fazendo uma chamada à API
+        try:
+            print("🌐 Verificando token com API Apify...")
+            url = f"{self.base_url}/users/me"
+            headers = {"Authorization": f"Bearer {self.apify_token}"}
+            
+            response = requests.get(url, headers=headers, timeout=5)
+            print(f"📡 Status: {response.status_code}")
+            
+            if response.status_code == 200:
+                user_data = response.json()
+                print(f"✅ Token válido! Usuário: {user_data.get('data', {}).get('username', 'Unknown')}")
+                print("=" * 50)
+                return True
+            else:
+                print(f"❌ Token inválido! Status: {response.status_code}")
+                print(f"❌ Resposta: {response.text[:200]}")
+                print("=" * 50)
+                return False
+                
+        except Exception as e:
+            print(f"❌ Erro ao verificar token: {e}")
+            print("=" * 50)
+            return False
 
     def coletar_vagas(self, cargo: str, localizacao: str = "São Paulo, Brazil", total_vagas: int = 20) -> Dict[str, Any]:
         """
