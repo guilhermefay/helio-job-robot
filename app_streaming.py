@@ -340,11 +340,26 @@ def collect_jobs_stream():
                                 yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': novos_resultados, 'total_atual': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                         
                         if status_run in ['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']:
+                            # Buscar TODOS os resultados finais quando terminar
+                            if status_run == 'SUCCEEDED':
+                                logger.info(f"✅ Run finalizada com sucesso! Buscando todos os resultados...")
+                                todos_resultados = linkedin_scraper.obter_todos_resultados_dataset(dataset_id)
+                                
+                                if todos_resultados and len(todos_resultados) > len(vagas_coletadas):
+                                    logger.info(f"🎯 Encontrados {len(todos_resultados)} resultados totais (coletados: {len(vagas_coletadas)})")
+                                    # Enviar apenas os que faltam
+                                    novos_resultados = todos_resultados[len(vagas_coletadas):]
+                                    if novos_resultados:
+                                        yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': novos_resultados, 'total_atual': len(todos_resultados), 'timestamp': datetime.now().isoformat()})}\n\n"
+                                    vagas_coletadas = todos_resultados
+                                else:
+                                    logger.info(f"📊 Total final: {len(vagas_coletadas)} vagas")
                             break
                         
                         time.sleep(10)
                     
                     # Finalizar
+                    logger.info(f"🏁 Finalizando streaming com {len(vagas_coletadas)} vagas")
                     yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                     yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
                     
