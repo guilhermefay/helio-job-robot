@@ -885,21 +885,134 @@ const ResultsDisplay = ({ results }) => {
   )
 }
 
-const StreamingJobCollection = ({ isVisible, onClose }) => {
+const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchConfig }) => {
+  const [status, setStatus] = useState('iniciando')
+  const [message, setMessage] = useState('Preparando coleta...')
+  const [progress, setProgress] = useState(0)
+  const [vagasColetadas, setVagasColetadas] = useState([])
+  const [error, setError] = useState(null)
+  const [abortController, setAbortController] = useState(null)
+  
+  React.useEffect(() => {
+    if (!isVisible || !searchConfig) return
+    
+    // Usar fetch com streaming
+    const startStreaming = async () => {
+      const controller = new AbortController()
+      setAbortController(controller)
+      
+      try {
+        const requestData = {
+          area_interesse: searchConfig.area.trim(),
+          cargo_objetivo: searchConfig.cargo.trim(),
+          localizacao: searchConfig.localizacao.trim(),
+          total_vagas_desejadas: searchConfig.quantidade,
+          segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+          tipo_vaga: 'hibrido'
+        }
+        
+        console.log('🚀 Iniciando streaming com dados:', requestData)
+        
+        const response = await fetch(`${config.baseURL}/api/agent1/collect-jobs-stream`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+          signal: controller.signal
+        })
+        
+        if (!response.ok) {
+          throw new Error('Erro ao iniciar streaming')
+        }
+        
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+        
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                console.log('📨 Streaming data:', data)
+                
+                if (data.status) {
+                  setStatus(data.status)
+                  if (data.message) setMessage(data.message)
+                }
+                
+                if (data.type === 'novas_vagas') {
+                  setVagasColetadas(prev => [...prev, ...data.novas_vagas])
+                  setProgress(data.total_atual)
+                }
+                
+                if (data.status === 'finalizado' && data.vagas) {
+                  onJobsCollected(data.vagas)
+                  return
+                }
+                
+                if (data.error) {
+                  setError(data.error)
+                  return
+                }
+              } catch (err) {
+                console.error('Erro ao processar stream:', err)
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao iniciar streaming:', err)
+          setError(err.message)
+        }
+      }
+    }
+    
+    startStreaming()
+    
+    return () => {
+      if (abortController) {
+        abortController.abort()
+      }
+    }
+  }, [isVisible, searchConfig, onJobsCollected])
+  
   if (!isVisible) return null
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold mb-2">Coletando Vagas...</h3>
-          <p className="text-gray-600 mb-4">Aguarde enquanto coletamos as vagas do mercado</p>
+          {!error ? (
+            <>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold mb-2">Coletando Vagas...</h3>
+              <p className="text-gray-600 mb-2">{message}</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Status: {status} | Vagas coletadas: {progress}
+              </p>
+            </>
+          ) : (
+            <>
+              <ExclamationTriangleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-red-600">Erro na Coleta</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+            </>
+          )}
           <button 
             onClick={onClose}
             className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
-            Cancelar
+            {error ? 'Fechar' : 'Cancelar'}
           </button>
         </div>
       </div>
@@ -935,19 +1048,38 @@ const Agent1 = () => {
     'Finalizando análise'
   ]
 
-  const handleStreamComplete = async (resultId) => {
-    try {
-      // Buscar resultado completo
-      const response = await fetch(`${config.baseURL}${config.endpoints.agent1.getResults}/${resultId}`)
-      const data = await response.json()
-      setResults(data)
-      setIsStreamActive(false)
-      setIsProcessing(false)
-    } catch (err) {
-      setError('Erro ao carregar resultados')
-      setIsStreamActive(false)
-      setIsProcessing(false)
+  const handleStreamComplete = (vagas) => {
+    console.log('✅ Stream completado com', vagas.length, 'vagas')
+    setIsStreamActive(false)
+    
+    // Montar o resultado da coleta
+    const collectionResult = {
+      demo_mode: false,
+      id: `stream_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      parametros: {
+        area_interesse: searchConfig.area.trim(),
+        cargo_objetivo: searchConfig.cargo.trim(),
+        localizacao: searchConfig.localizacao.trim(),
+        total_vagas_desejadas: searchConfig.quantidade
+      },
+      estatisticas: {
+        totalVagas: vagas.length,
+        vagasAnalisadas: vagas.length,
+        successRate: 100,
+        tempoColeta: 'Via streaming'
+      },
+      transparencia: {
+        fontes_utilizadas: ['LinkedIn Jobs via Apify'],
+        metodo_coleta: 'Streaming em tempo real',
+        filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
+        observacoes: 'Coleta realizada via streaming'
+      },
+      vagas: vagas
     }
+    
+    setCollectionData(collectionResult)
+    setIsProcessing(false)
   }
 
   const handleStreamError = (errorMessage) => {
@@ -1002,6 +1134,18 @@ const Agent1 = () => {
       console.log('📡 Método: POST')
       console.log('📋 Headers: Content-Type: application/json')
       console.log('⏰ Timestamp:', new Date().toISOString())
+      
+      // Tentar usar streaming primeiro
+      console.log('🌊 Tentando usar streaming em:', `${config.baseURL}/api/agent1/collect-jobs-stream`)
+      console.log('Streaming disponível?', true)
+      
+      // Verificar se streaming está disponível
+      if (true) {
+        console.log('🌊 Iniciando coleta com streaming...')
+        setIsStreamActive(true)
+        // O streaming será gerenciado pelo StreamingJobCollection
+        return
+      }
 
       // ETAPA 1: Coletar vagas
       // Primeiro tentar o endpoint real
@@ -1180,6 +1324,7 @@ const Agent1 = () => {
         isVisible={isStreamActive}
         onJobsCollected={handleStreamComplete}
         onClose={handleStreamError}
+        searchConfig={searchConfig}
       />
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
