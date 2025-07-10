@@ -26,7 +26,7 @@ class LinkedInApifyScraper:
         """
         self.apify_token = os.getenv('APIFY_API_TOKEN')
         self.base_url = "https://api.apify.com/v2"
-        self.actor_id = "zn2embNMyqFh385Or"  # ✅ Actor da Catho (Legal)
+        self.actor_id = "easyapi~catho-jobs-scraper"  # ✅ Actor da Catho (Legal)
         
         if not self.apify_token:
             print("⚠️  APIFY_API_TOKEN não encontrado. Usando dados de fallback.")
@@ -553,11 +553,11 @@ class LinkedInApifyScraper:
             return None, None
         
         try:
-            # Parâmetros para o actor da Catho
+            # Parâmetros para o actor da Catho easyapi
             actor_input = {
-                "searchQuery": cargo,  # Palavra-chave de busca
-                "location": localizacao,  # Local da vaga
-                "maxItems": limite,  # Número máximo de vagas
+                "keyword": cargo,  # Palavra-chave de busca
+                "location": localizacao,  # Local da vaga  
+                "maxResults": limite,  # Número máximo de vagas
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]
