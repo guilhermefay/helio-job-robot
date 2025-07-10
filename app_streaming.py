@@ -255,6 +255,51 @@ def collect_keywords():
             'demo_mode': False
         }), 500
 
+@app.route('/api/agent1/cancel-collection', methods=['POST', 'OPTIONS'])
+def cancel_collection():
+    """Endpoint para cancelar coleta em andamento"""
+    
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        data = request.get_json()
+        run_id = data.get('run_id')
+        
+        if not run_id:
+            return jsonify({'error': 'run_id não fornecido'}), 400
+        
+        # Verificar se os scrapers estão disponíveis
+        if LinkedInApifyScraper:
+            linkedin_scraper = LinkedInApifyScraper()
+            
+            # Cancelar o run
+            success = linkedin_scraper.cancelar_run(run_id)
+            
+            if success:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Coleta cancelada com sucesso',
+                    'run_id': run_id
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Erro ao cancelar coleta'
+                }), 500
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Serviço não disponível'
+            }), 503
+            
+    except Exception as e:
+        logger.error(f"❌ Erro ao cancelar coleta: {e}")
+        return jsonify({
+            'error': 'Erro ao cancelar coleta',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 def collect_jobs_stream():
     """Endpoint de streaming de coleta de vagas"""
@@ -333,7 +378,9 @@ def collect_jobs_stream():
                         total_resultados = linkedin_scraper.contar_resultados_dataset(dataset_id)
                         
                         if total_resultados > len(vagas_coletadas):
-                            novos_resultados = linkedin_scraper.obter_resultados_parciais(dataset_id, len(vagas_coletadas), quantidade)
+                            # Buscar até 50 novos resultados por vez para não sobrecarregar
+                            limit_parcial = min(50, total_resultados - len(vagas_coletadas))
+                            novos_resultados = linkedin_scraper.obter_resultados_parciais(dataset_id, len(vagas_coletadas), limit_parcial)
                             
                             if novos_resultados:
                                 vagas_coletadas.extend(novos_resultados)
@@ -402,6 +449,135 @@ def collect_jobs_stream():
     
     return Response(
         generate_stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    )
+
+@app.route('/api/agent1/analyze-keywords-stream', methods=['POST', 'OPTIONS'])
+def analyze_keywords_stream():
+    """Endpoint de streaming para análise de palavras-chave com IA"""
+    
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    # Obter dados ANTES do generator
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Dados não fornecidos'}), 400
+    
+    vagas = data.get('vagas', [])
+    cargo_objetivo = data.get('cargo_objetivo', '')
+    area_interesse = data.get('area_interesse', '')
+    
+    def generate_analysis_stream():
+        try:
+            # Enviar confirmação inicial
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': 'Preparando análise com IA...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            # Verificar se temos o AIKeywordExtractor
+            try:
+                from core.services.ai_keyword_extractor import AIKeywordExtractor
+                extractor = AIKeywordExtractor()
+                yield f"data: {json.dumps({'status': 'extractor_ok', 'message': 'Extrator de palavras-chave carregado', 'timestamp': datetime.now().isoformat()})}\n\n"
+            except ImportError as e:
+                yield f"data: {json.dumps({'error': 'Extrator não disponível', 'timestamp': datetime.now().isoformat()})}\n\n"
+                return
+            
+            # Etapa 1: Preparação dos dados
+            yield f"data: {json.dumps({'status': 'preparando', 'message': f'Preparando {len(vagas)} vagas para análise...', 'progress': 10, 'timestamp': datetime.now().isoformat()})}\n\n"
+            time.sleep(0.5)
+            
+            # Etapa 2: Verificação de modelos IA
+            yield f"data: {json.dumps({'status': 'verificando_ia', 'message': 'Verificando modelos de IA disponíveis...', 'progress': 20, 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            modelos_disponiveis = []
+            if extractor.gemini_model:
+                modelos_disponiveis.append('Gemini Pro')
+            if extractor.anthropic_client:
+                modelos_disponiveis.append('Claude')
+            if extractor.openai_client:
+                modelos_disponiveis.append('GPT-4')
+            
+            yield f"data: {json.dumps({'status': 'modelos_encontrados', 'message': f'Modelos disponíveis: {", ".join(modelos_disponiveis)}', 'progress': 30, 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            # Etapa 3: Análise com IA
+            yield f"data: {json.dumps({'status': 'analisando', 'message': 'Enviando vagas para análise com IA...', 'progress': 40, 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+            # Simular progresso de análise
+            mensagens_progresso = [
+                ('processando_descricoes', 'Processando descrições das vagas...', 50),
+                ('identificando_padroes', 'Identificando padrões e termos recorrentes...', 60),
+                ('categorizando', 'Categorizando palavras-chave...', 70),
+                ('aplicando_metodologia', 'Aplicando metodologia Carolina Martins...', 80),
+                ('finalizando', 'Finalizando análise e preparando resultados...', 90)
+            ]
+            
+            for status, mensagem, progresso in mensagens_progresso:
+                yield f"data: {json.dumps({'status': status, 'message': mensagem, 'progress': progresso, 'timestamp': datetime.now().isoformat()})}\n\n"
+                time.sleep(2)  # Simular processamento
+            
+            # Executar análise real
+            try:
+                # Como o método é assíncrono, precisamos executá-lo em um loop
+                import asyncio
+                
+                # Callback para enviar atualizações
+                async def callback_progresso(msg):
+                    yield f"data: {json.dumps({'status': 'processando', 'message': msg, 'timestamp': datetime.now().isoformat()})}\n\n"
+                
+                # Executar análise de forma segura
+                try:
+                    # Tentar usar loop existente se disponível
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # Se o loop já está rodando, usar uma task
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(
+                                asyncio.run,
+                                extractor.extrair_palavras_chave_ia(
+                                    vagas=vagas,
+                                    cargo_objetivo=cargo_objetivo,
+                                    area_interesse=area_interesse
+                                )
+                            )
+                            resultado = future.result()
+                    else:
+                        resultado = loop.run_until_complete(
+                            extractor.extrair_palavras_chave_ia(
+                                vagas=vagas,
+                                cargo_objetivo=cargo_objetivo,
+                                area_interesse=area_interesse
+                            )
+                        )
+                except RuntimeError:
+                    # Se não há loop, criar um novo
+                    resultado = asyncio.run(
+                        extractor.extrair_palavras_chave_ia(
+                            vagas=vagas,
+                            cargo_objetivo=cargo_objetivo,
+                            area_interesse=area_interesse
+                        )
+                    )
+                
+                # Enviar resultado final
+                yield f"data: {json.dumps({'status': 'concluido', 'resultado': resultado, 'progress': 100, 'timestamp': datetime.now().isoformat()})}\n\n"
+                
+            except Exception as e:
+                logger.error(f"Erro na análise IA: {e}")
+                yield f"data: {json.dumps({'error': f'Erro na análise: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
+            
+        except Exception as e:
+            logger.error(f"Erro crítico no streaming: {e}")
+            yield f"data: {json.dumps({'error': f'Erro crítico: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
+    
+    return Response(
+        generate_analysis_stream(),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',

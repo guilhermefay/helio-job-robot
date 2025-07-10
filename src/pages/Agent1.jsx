@@ -199,7 +199,16 @@ const ProgressIndicator = ({ currentStep, steps, stepLabels }) => {
 }
 
 // Collection Results Component
-const CollectionResults = ({ collectionData, onAnalyze, isAnalyzing, config }) => {
+const CollectionResults = ({ 
+  collectionData, 
+  onAnalyze, 
+  isAnalyzing, 
+  config, 
+  analysisStatus, 
+  analysisMessage, 
+  analysisProgress, 
+  onCancelAnalysis 
+}) => {
   const [showVagas, setShowVagas] = useState(false)
   
   if (!collectionData) return null
@@ -354,31 +363,70 @@ const CollectionResults = ({ collectionData, onAnalyze, isAnalyzing, config }) =
           </p>
         )}
         
-        {/* Loading da Análise */}
+        {/* Loading da Análise com Streaming */}
         {isAnalyzing && (
           <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <SparklesIcon className="w-5 h-5 text-purple-600 mr-2 mt-0.5 animate-pulse" />
-              <div className="flex-1">
-                <h4 className="text-sm font-medium text-purple-800">Analisando com Gemini...</h4>
-                <p className="text-xs text-purple-700 mt-1">
-                  O Gemini está processando {collectionData.estatisticas.totalVagas} vagas para extrair as palavras-chave mais relevantes.
-                </p>
-                <div className="mt-2">
-                  <div className="flex items-center text-xs text-purple-600">
-                    <div className="animate-pulse mr-2">●</div>
-                    <span>Processando descrições das vagas</span>
-                  </div>
-                  <div className="flex items-center text-xs text-purple-600 mt-1">
-                    <div className="animate-pulse mr-2">●</div>
-                    <span>Identificando termos técnicos e comportamentais</span>
-                  </div>
-                  <div className="flex items-center text-xs text-purple-600 mt-1">
-                    <div className="animate-pulse mr-2">●</div>
-                    <span>Aplicando metodologia Carolina Martins</span>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start flex-1">
+                <SparklesIcon className="w-5 h-5 text-purple-600 mr-2 mt-0.5 animate-pulse" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-purple-800">
+                    {analysisStatus === 'concluido' ? 'Análise Concluída!' : 'Analisando com IA...'}
+                  </h4>
+                  <p className="text-xs text-purple-700 mt-1">
+                    {analysisMessage || `Processando ${collectionData.estatisticas.totalVagas} vagas para extrair palavras-chave.`}
+                  </p>
+                  
+                  {/* Barra de Progresso */}
+                  {analysisProgress > 0 && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-purple-600 mb-1">
+                        <span>Progresso</span>
+                        <span>{analysisProgress}%</span>
+                      </div>
+                      <div className="w-full bg-purple-200 rounded-full h-2">
+                        <div 
+                          className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${analysisProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-2 space-y-1">
+                    <div className={`flex items-center text-xs ${analysisStatus === 'preparando' || analysisStatus === 'iniciando' ? 'text-purple-600 font-medium' : 'text-purple-500'}`}>
+                      <div className={`mr-2 ${analysisStatus === 'preparando' || analysisStatus === 'iniciando' ? 'animate-pulse' : ''}`}>●</div>
+                      <span>Preparando dados para análise</span>
+                    </div>
+                    <div className={`flex items-center text-xs ${analysisStatus === 'verificando_ia' ? 'text-purple-600 font-medium' : 'text-purple-500'}`}>
+                      <div className={`mr-2 ${analysisStatus === 'verificando_ia' ? 'animate-pulse' : ''}`}>●</div>
+                      <span>Verificando modelos de IA disponíveis</span>
+                    </div>
+                    <div className={`flex items-center text-xs ${analysisStatus === 'analisando' || analysisStatus === 'processando_descricoes' ? 'text-purple-600 font-medium' : 'text-purple-500'}`}>
+                      <div className={`mr-2 ${analysisStatus === 'analisando' || analysisStatus === 'processando_descricoes' ? 'animate-pulse' : ''}`}>●</div>
+                      <span>Processando descrições das vagas</span>
+                    </div>
+                    <div className={`flex items-center text-xs ${analysisStatus === 'identificando_padroes' ? 'text-purple-600 font-medium' : 'text-purple-500'}`}>
+                      <div className={`mr-2 ${analysisStatus === 'identificando_padroes' ? 'animate-pulse' : ''}`}>●</div>
+                      <span>Identificando padrões e termos</span>
+                    </div>
+                    <div className={`flex items-center text-xs ${analysisStatus === 'aplicando_metodologia' ? 'text-purple-600 font-medium' : 'text-purple-500'}`}>
+                      <div className={`mr-2 ${analysisStatus === 'aplicando_metodologia' ? 'animate-pulse' : ''}`}>●</div>
+                      <span>Aplicando metodologia Carolina Martins</span>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Botão de Cancelar */}
+              {analysisStatus !== 'concluido' && (
+                <button
+                  onClick={onCancelAnalysis}
+                  className="ml-4 px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -937,6 +985,46 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
   const [vagasColetadas, setVagasColetadas] = useState([])
   const [error, setError] = useState(null)
   const [abortController, setAbortController] = useState(null)
+  const [runId, setRunId] = useState(null)
+  const [isCancelling, setIsCancelling] = useState(false)
+  
+  const handleCancel = async () => {
+    if (!runId) {
+      // Se não temos run_id, apenas abortar o fetch
+      if (abortController) {
+        abortController.abort()
+      }
+      onClose()
+      return
+    }
+    
+    setIsCancelling(true)
+    
+    try {
+      // Cancelar no Apify
+      const response = await fetch(`${config.baseURL}/api/agent1/cancel-collection`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ run_id: runId })
+      })
+      
+      if (response.ok) {
+        console.log('✅ Coleta cancelada com sucesso')
+      }
+    } catch (err) {
+      console.error('Erro ao cancelar coleta:', err)
+    }
+    
+    // Abortar o streaming também
+    if (abortController) {
+      abortController.abort()
+    }
+    
+    setIsCancelling(false)
+    onClose()
+  }
   
   React.useEffect(() => {
     if (!isVisible || !searchConfig) return
@@ -998,6 +1086,10 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                     if (data.status) {
                       setStatus(data.status)
                       if (data.message) setMessage(data.message)
+                      // Capturar run_id quando a coleta iniciar
+                      if (data.status === 'coleta_iniciada' && data.run_id) {
+                        setRunId(data.run_id)
+                      }
                     }
                     
                     if (data.type === 'novas_vagas') {
@@ -1100,12 +1192,21 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
           </div>
         )}
         
-        <div className="text-center">
+        <div className="text-center space-x-4">
+          {!error && status !== 'concluido' && status !== 'finalizado' && (
+            <button 
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCancelling ? 'Cancelando...' : 'Interromper Busca'}
+            </button>
+          )}
           <button 
             onClick={onClose}
             className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
-            {error ? 'Fechar' : 'Cancelar'}
+            {error || status === 'concluido' || status === 'finalizado' ? 'Fechar' : 'Ocultar'}
           </button>
         </div>
       </div>
@@ -1130,6 +1231,12 @@ const Agent1 = () => {
   const [isStreamActive, setIsStreamActive] = useState(false)
   const [collectionData, setCollectionData] = useState(null) // Dados da coleta
   const [isAnalyzing, setIsAnalyzing] = useState(false) // Estado da análise
+  
+  // Estados para streaming da análise
+  const [analysisStatus, setAnalysisStatus] = useState('')
+  const [analysisMessage, setAnalysisMessage] = useState('')
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [analysisAbortController, setAnalysisAbortController] = useState(null)
 
   const stepLabels = [
     'Configurando busca',
@@ -1352,61 +1459,117 @@ const Agent1 = () => {
   }
 
   const handleAnalyzeKeywords = async () => {
-    if (!collectionData || !collectionData.id) {
-      setError('Nenhuma coleta disponível para análise')
+    if (!collectionData || !collectionData.vagas) {
+      setError('Nenhuma vaga disponível para análise')
       return
     }
 
     setIsAnalyzing(true)
     setError(null)
     setCurrentStep(5)
+    setAnalysisStatus('iniciando')
+    setAnalysisMessage('Preparando análise...')
+    setAnalysisProgress(0)
+
+    const controller = new AbortController()
+    setAnalysisAbortController(controller)
 
     try {
-      const requestData = {
-        collection_id: collectionData.id,
-        area_interesse: searchConfig.area.trim(),
-        cargo_objetivo: searchConfig.cargo.trim()
-      }
-
-      setCurrentStep(6)
-
-      // ETAPA 2: Analisar palavras-chave com Gemini
-      const response = await fetch(`${config.baseURL}${config.endpoints.agent1.collectKeywords}`, {
+      const response = await fetch(`${config.baseURL}/api/agent1/analyze-keywords-stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify({
+          vagas: collectionData.vagas,
+          cargo_objetivo: searchConfig.cargo.trim(),
+          area_interesse: searchConfig.area.trim()
+        }),
+        signal: controller.signal
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro na análise de palavras-chave')
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      setCurrentStep(7)
-      const analysisResult = await response.json()
-      
-      setCurrentStep(8)
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Mesclar dados da coleta com análise
-      const finalResult = {
-        ...collectionData,
-        ...analysisResult,
-        transparencia: {
-          vagas_coletadas: collectionData.vagas,
-          ...analysisResult.transparencia
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                
+                if (data.status) {
+                  setAnalysisStatus(data.status)
+                  
+                  // Atualizar step baseado no status
+                  if (data.status === 'analisando') setCurrentStep(6)
+                  if (data.status === 'concluido') setCurrentStep(8)
+                }
+                if (data.message) {
+                  setAnalysisMessage(data.message)
+                }
+                if (data.progress !== undefined) {
+                  setAnalysisProgress(data.progress)
+                }
+                if (data.resultado) {
+                  // Mesclar dados da coleta com análise
+                  const finalResult = {
+                    ...collectionData,
+                    ...data.resultado,
+                    transparencia: {
+                      vagas_coletadas: collectionData.vagas,
+                      ...data.resultado.transparencia
+                    }
+                  }
+                  setResults(finalResult)
+                  setCurrentStep(8)
+                }
+                if (data.error) {
+                  console.error('Erro na análise:', data.error)
+                  setError(`Erro na análise: ${data.error}`)
+                  break
+                }
+              } catch (parseError) {
+                console.warn('Erro ao processar linha de streaming:', parseError)
+              }
+            }
+          }
         }
+      } finally {
+        reader.releaseLock()
       }
-      
-      setResults(finalResult)
-      setIsAnalyzing(false)
-      
     } catch (err) {
-      console.error('Erro na análise:', err)
-      setError(err.message || 'Erro ao analisar palavras-chave.')
+      if (err.name === 'AbortError') {
+        console.log('Análise cancelada pelo usuário')
+      } else {
+        console.error('Erro na análise:', err)
+        setError(err.message || 'Erro ao conectar com o servidor para análise')
+      }
+    } finally {
       setIsAnalyzing(false)
+      setAnalysisAbortController(null)
+    }
+  }
+
+  // Função para cancelar análise
+  const handleCancelAnalysis = () => {
+    if (analysisAbortController) {
+      analysisAbortController.abort()
+      setIsAnalyzing(false)
+      setAnalysisStatus('')
+      setAnalysisMessage('')
+      setAnalysisProgress(0)
+      setAnalysisAbortController(null)
     }
   }
 
@@ -1507,6 +1670,10 @@ const Agent1 = () => {
             onAnalyze={handleAnalyzeKeywords}
             isAnalyzing={isAnalyzing}
             config={searchConfig}
+            analysisStatus={analysisStatus}
+            analysisMessage={analysisMessage}
+            analysisProgress={analysisProgress}
+            onCancelAnalysis={handleCancelAnalysis}
           />
         ) : results ? (
           /* Results Section */

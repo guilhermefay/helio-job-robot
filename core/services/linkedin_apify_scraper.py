@@ -619,6 +619,33 @@ class LinkedInApifyScraper:
             print(f"❌ Erro ao obter resultados parciais: {e}")
             return []
     
+    def cancelar_run(self, run_id: str) -> bool:
+        """
+        Cancela/aborta uma execução do Apify em andamento
+        """
+        
+        if not self.apify_token or not run_id:
+            return False
+        
+        try:
+            # Endpoint para abortar um run
+            response = requests.post(
+                f"{self.base_url}/actor-runs/{run_id}/abort",
+                params={"token": self.apify_token},
+                timeout=10
+            )
+            
+            if response.status_code in [200, 204]:
+                print(f"✅ Run {run_id} cancelado com sucesso")
+                return True
+            else:
+                print(f"❌ Erro ao cancelar run: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Erro ao cancelar run: {e}")
+            return False
+    
     def obter_todos_resultados(self, dataset_id: str) -> List[Dict]:
         """
         Obtém todos os resultados finais do dataset
