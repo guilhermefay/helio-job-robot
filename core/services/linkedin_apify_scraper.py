@@ -26,7 +26,7 @@ class LinkedInApifyScraper:
         """
         self.apify_token = os.getenv('APIFY_API_TOKEN')
         self.base_url = "https://api.apify.com/v2"
-        self.actor_id = "curious_coder~linkedin-jobs-scraper"  # ✅ Actor correto e gratuito
+        self.actor_id = "zn2embNMyqFh385Or"  # ✅ Actor da Catho (Legal)
         
         if not self.apify_token:
             print("⚠️  APIFY_API_TOKEN não encontrado. Usando dados de fallback.")
@@ -270,19 +270,19 @@ class LinkedInApifyScraper:
         """
         try:
             vaga = {
-                "titulo": job_data.get('title', job_data.get('jobTitle', 'Título não disponível')),
-                "empresa": job_data.get('companyName', job_data.get('company', 'Empresa não informada')),
+                "titulo": job_data.get('title', 'Título não disponível'),
+                "empresa": job_data.get('company', 'Empresa não informada'),
                 "localizacao": job_data.get('location', 'Local não informado'),
-                "descricao": job_data.get('description', job_data.get('jobDescription', 'Descrição não disponível')),
-                "fonte": "linkedin_apify",
-                "url": job_data.get('link', job_data.get('jobUrl', '')),
+                "descricao": job_data.get('description', 'Descrição não disponível'),
+                "fonte": "catho",
+                "url": job_data.get('url', ''),
                 "data_coleta": datetime.now().isoformat(),
-                "data_publicacao": job_data.get('postedTime', job_data.get('publishedAt', '')),
-                "salario": job_data.get('salary', ''),
-                "tipo_emprego": job_data.get('contractType', job_data.get('employmentType', '')),
-                "nivel_experiencia": job_data.get('seniorityLevel', job_data.get('experienceLevel', '')),
-                "empresa_logo": job_data.get('companyLogo', ''),
-                "empresa_linkedin": job_data.get('companyLink', job_data.get('companyUrl', '')),
+                "data_publicacao": job_data.get('publishedDate', ''),
+                "salario": job_data.get('salary', 'Não informado'),
+                "tipo_emprego": job_data.get('contractType', 'Não especificado'),
+                "nivel_experiencia": job_data.get('experienceLevel', 'Não especificado'),
+                "beneficios": job_data.get('benefits', []),
+                "requisitos": job_data.get('requirements', ''),
                 "apify_real": True  # Marca como dados reais do Apify
             }
             
@@ -301,22 +301,22 @@ class LinkedInApifyScraper:
         
         for item in items:
             try:
-                # O actor bebity retorna campos neste formato
+                # O actor da Catho retorna campos neste formato
                 vaga = {
-                    "titulo": item.get('title', item.get('jobTitle', 'Título não disponível')),
-                    "empresa": item.get('companyName', item.get('company', 'Empresa não informada')),
+                    "titulo": item.get('title', 'Título não disponível'),
+                    "empresa": item.get('company', 'Empresa não informada'),
                     "localizacao": item.get('location', 'Local não informado'),
-                    "descricao": item.get('description', item.get('jobDescription', 'Descrição não disponível')),
-                    "fonte": "linkedin_apify",
-                    "url": item.get('link', item.get('jobUrl', '')),
+                    "descricao": item.get('description', 'Descrição não disponível'),
+                    "fonte": "catho",
+                    "url": item.get('url', ''),
                     "data_coleta": datetime.now().isoformat(),
                     "cargo_pesquisado": cargo_pesquisado,
-                    "data_publicacao": item.get('postedTime', item.get('publishedAt', '')),
-                    "salario": item.get('salary', ''),
-                    "tipo_emprego": item.get('contractType', item.get('employmentType', '')),
-                    "nivel_experiencia": item.get('seniorityLevel', item.get('experienceLevel', '')),
-                    "empresa_logo": item.get('companyLogo', ''),
-                    "empresa_linkedin": item.get('companyLink', item.get('companyUrl', '')),
+                    "data_publicacao": item.get('publishedDate', ''),
+                    "salario": item.get('salary', 'Não informado'),
+                    "tipo_emprego": item.get('contractType', 'Não especificado'),
+                    "nivel_experiencia": item.get('experienceLevel', 'Não especificado'),
+                    "beneficios": item.get('benefits', []),
+                    "requisitos": item.get('requirements', ''),
                     "apify_real": True  # Marca como dados reais do Apify
                 }
                 
@@ -491,14 +491,11 @@ class LinkedInApifyScraper:
             return None, None
         
         try:
-            # URL de busca otimizada
-            search_url = f"https://www.linkedin.com/jobs/search/?keywords={cargo}&location={localizacao}&f_TPR=r604800"
-            
-            # Parâmetros para o actor
+            # Parâmetros para o actor da Catho
             actor_input = {
-                "urls": [search_url],
-                "numberOfJobsNeeded": limite,
-                "scrapeCompanyDetails": True,
+                "searchQuery": cargo,  # Palavra-chave de busca
+                "location": localizacao,  # Local da vaga
+                "maxItems": limite,  # Número máximo de vagas
                 "proxy": {
                     "useApifyProxy": True,
                     "apifyProxyGroups": ["RESIDENTIAL"]

@@ -321,7 +321,7 @@ def collect_jobs_stream():
         try:
             
             # Enviar confirmação inicial
-            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta na Catho para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar token APIFY
             apify_token = os.getenv('APIFY_API_TOKEN')
@@ -336,17 +336,17 @@ def collect_jobs_stream():
             logger.info(f"LinkedInApifyScraper disponível: {LinkedInApifyScraper is not None}")
             
             if JobScraper and LinkedInApifyScraper:
-                logger.info("✅ Scrapers disponíveis - Usando APIFY real")
+                logger.info("✅ Scrapers disponíveis - Usando Catho (Legal)")
                 job_scraper = JobScraper()
-                linkedin_scraper = LinkedInApifyScraper()
-                logger.info(f"LinkedIn scraper token: {'PRESENTE' if linkedin_scraper.apify_token else 'AUSENTE'}")
+                linkedin_scraper = LinkedInApifyScraper()  # Agora está usando Catho internamente
+                logger.info(f"Catho scraper token: {'PRESENTE' if linkedin_scraper.apify_token else 'AUSENTE'}")
                 
                 # Verificar credenciais
                 if not linkedin_scraper.verificar_credenciais():
                     yield f"data: {json.dumps({'error': 'Credenciais APIFY inválidas', 'timestamp': datetime.now().isoformat()})}\n\n"
                     return
                 
-                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Scrapers inicializados', 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Catho scraper inicializado (Legal)', 'timestamp': datetime.now().isoformat()})}\n\n"
                 
                 # Iniciar coleta
                 try:
