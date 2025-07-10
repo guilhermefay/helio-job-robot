@@ -134,7 +134,7 @@ class LinkedInApifyScraper:
                     elif status in ["FAILED", "ABORTED", "TIMED-OUT"]:
                         print(f"❌ Scraping falhou: {status}")
                         print("🔥 ATENÇÃO: Chamando FALLBACK ao invés de Apify real!")
-            return self._fallback_linkedin_data(cargo, localizacao, limite)
+                        return self._fallback_linkedin_data(cargo, localizacao, limite)
                 else:
                     print(f"⚠️ Erro ao verificar status: {status_response.status_code}")
             
