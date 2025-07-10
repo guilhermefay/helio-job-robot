@@ -1195,7 +1195,7 @@ const Agent1 = () => {
       {console.log('🎯 isStreamActive:', isStreamActive, 'isProcessing:', isProcessing)}
       {isStreamActive && (
         <ProgressStream
-          endpoint="/api/agent1/collect-jobs-stream"
+          isActive={isStreamActive}
           requestData={{
             area_interesse: searchConfig.area.trim(),
             cargo_objetivo: searchConfig.cargo.trim(),
