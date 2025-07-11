@@ -129,6 +129,14 @@ def collect_keywords():
         localizacao = data.get('localizacao', 'São Paulo')
         quantidade = min(data.get('total_vagas_desejadas', 20), 100)  # Limitar a 100 para economizar
         
+        # Extrair parâmetros avançados
+        raio_km = int(data.get('raio', 25))
+        nivel = data.get('nivel', 'todos')
+        tipo_contrato = data.get('tipoContrato', 'todos')
+        dias_publicacao = data.get('diasPublicacao', 'todos')
+        ordenar = data.get('ordenar', 'date')
+        modalidade = data.get('modalidade', 'todos')
+        
         logger.info(f"📋 Parâmetros: cargo={cargo}, área={area}, local={localizacao}, qtd={quantidade}")
         
         # Verificar token APIFY
@@ -148,10 +156,35 @@ def collect_keywords():
             # Executar coleta
             logger.info("🚀 Iniciando scraping com Indeed...")
             logger.info(f"Token APIFY presente: {'Sim' if scraper.apify_token else 'Não'}")
+            # Preparar parâmetros para o scraper
+            kwargs = {
+                'raio_km': raio_km
+            }
+            
+            # Adicionar modalidade
+            if modalidade == 'remote':
+                kwargs['remoto'] = True
+            
+            # Adicionar nível se especificado
+            if nivel != 'todos':
+                kwargs['nivel'] = nivel
+                
+            # Adicionar tipo de contrato se especificado
+            if tipo_contrato != 'todos':
+                kwargs['tipo_vaga'] = tipo_contrato
+                
+            # Adicionar filtro de data se especificado
+            if dias_publicacao != 'todos':
+                kwargs['dias_publicacao'] = dias_publicacao
+                
+            # Adicionar ordenação
+            kwargs['ordenar'] = ordenar
+            
             resultado_scraping = scraper.coletar_vagas_indeed(
                 cargo=cargo,
                 localizacao=localizacao,
-                limite=quantidade
+                limite=quantidade,
+                **kwargs
             )
             
             if not resultado_scraping:
@@ -317,7 +350,14 @@ def collect_jobs_stream():
     area = data.get('area_interesse', 'Tecnologia')
     localizacao = data.get('localizacao', 'São Paulo')
     quantidade = min(data.get('total_vagas_desejadas', 20), 100)  # Limitar a 100 para economizar
-    raio_km = data.get('raio_km', 50)
+    
+    # Extrair parâmetros avançados para streaming
+    raio_km = int(data.get('raio', 25))
+    nivel = data.get('nivel', 'todos')
+    tipo_contrato = data.get('tipoContrato', 'todos')
+    dias_publicacao = data.get('diasPublicacao', 'todos')
+    ordenar = data.get('ordenar', 'date')
+    modalidade = data.get('modalidade', 'todos')
     
     def generate_stream():
         try:
@@ -346,11 +386,35 @@ def collect_jobs_stream():
                 
                 # Iniciar coleta
                 try:
+                    # Preparar kwargs para streaming
+                    stream_kwargs = {
+                        'raio_km': raio_km
+                    }
+                    
+                    # Adicionar modalidade
+                    if modalidade == 'remote':
+                        stream_kwargs['remoto'] = True
+                    
+                    # Adicionar nível se especificado
+                    if nivel != 'todos':
+                        stream_kwargs['nivel'] = nivel
+                        
+                    # Adicionar tipo de contrato se especificado
+                    if tipo_contrato != 'todos':
+                        stream_kwargs['tipo_vaga'] = tipo_contrato
+                        
+                    # Adicionar filtro de data se especificado
+                    if dias_publicacao != 'todos':
+                        stream_kwargs['dias_publicacao'] = dias_publicacao
+                        
+                    # Adicionar ordenação
+                    stream_kwargs['ordenar'] = ordenar
+                    
                     run_id, dataset_id = indeed_scraper.iniciar_execucao_indeed(
                         cargo=cargo,
                         localizacao=localizacao,
                         limite=quantidade,
-                        raio_km=raio_km
+                        **stream_kwargs
                     )
                     
                     if not run_id:

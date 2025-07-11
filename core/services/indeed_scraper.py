@@ -38,7 +38,8 @@ class IndeedScraper:
         raio_km: int = 25,
         remoto: bool = False,
         tipo_vaga: str = None,
-        nivel: str = None
+        nivel: str = None,
+        **kwargs
     ) -> List[Dict[str, Any]]:
         """
         Coleta vagas do Indeed usando Apify
@@ -84,7 +85,7 @@ class IndeedScraper:
                 "location": localizacao,
                 "maxRows": limite,  # Já limitado a 100 acima
                 "radius": raio_milhas,
-                "sort": "date",  # Mais recentes primeiro
+                "sort": kwargs.get('ordenar', 'date') if kwargs.get('ordenar', 'date') == 'relevance' else 'date',
             }
             
             # Adicionar filtros opcionais
@@ -94,6 +95,11 @@ class IndeedScraper:
                 actor_input["jobType"] = tipo_vaga
             if nivel:
                 actor_input["level"] = nivel
+                
+            # Adicionar filtro de data se especificado nos kwargs
+            dias_publicacao = kwargs.get('dias_publicacao')
+            if dias_publicacao and dias_publicacao != 'todos':
+                actor_input["fromDays"] = str(dias_publicacao)
             
             print(f"🚀 Buscando vagas: {cargo} em {localizacao}")
             print(f"📊 Configuração: limite={limite}, raio={raio_milhas} milhas")
@@ -373,7 +379,7 @@ class IndeedScraper:
                 "location": localizacao,
                 "maxRows": limite_seguro,  # Máximo 100 para economizar
                 "radius": raio_milhas,
-                "sort": "date"
+                "sort": kwargs.get('ordenar', 'date') if kwargs.get('ordenar', 'date') == 'relevance' else 'date'
             }
             
             # Adicionar filtros opcionais
@@ -383,6 +389,11 @@ class IndeedScraper:
                 actor_input["jobType"] = kwargs['tipo_vaga']
             if kwargs.get('nivel'):
                 actor_input["level"] = kwargs['nivel']
+                
+            # Adicionar filtro de data se especificado
+            dias_publicacao = kwargs.get('dias_publicacao')
+            if dias_publicacao and dias_publicacao != 'todos':
+                actor_input["fromDays"] = str(dias_publicacao)
             
             print(f"📤 Enviando para Indeed actor...")
             

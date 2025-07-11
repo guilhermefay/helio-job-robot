@@ -12,7 +12,14 @@ import {
   ChartBarIcon,
   SparklesIcon,
   ArrowPathIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  AdjustmentsHorizontalIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CalendarDaysIcon,
+  UserGroupIcon,
+  CurrencyDollarIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline'
 
 // Header Component
@@ -56,6 +63,8 @@ const Header = () => {
 
 // Search Configuration Component
 const SearchConfiguration = ({ config, onChange, disabled }) => {
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  
   const handleChange = (field, value) => {
     onChange({
       ...config,
@@ -169,21 +178,162 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
         </p>
       </div>
 
-      {/* Segmentos */}
+      {/* Botão para Filtros Avançados */}
       <div className="mt-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          <BuildingOfficeIcon className="w-4 h-4 inline mr-1" />
-          Segmentos de Interesse (opcional)
-        </label>
-        <textarea
-          value={config.segmentos}
-          onChange={(e) => handleChange('segmentos', e.target.value)}
-          disabled={disabled}
-          placeholder="Ex: Startups, Multinacionais, Consultoria, E-commerce..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:bg-gray-50"
-          rows={3}
-        />
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
+        >
+          <AdjustmentsHorizontalIcon className="w-4 h-4 mr-2" />
+          Filtros Avançados
+          {showAdvanced ? (
+            <ChevronUpIcon className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDownIcon className="w-4 h-4 ml-1" />
+          )}
+        </button>
       </div>
+      
+      {/* Filtros Avançados */}
+      {showAdvanced && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Raio de Busca */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPinIcon className="w-4 h-4 inline mr-1" />
+                Raio de Busca
+              </label>
+              <select
+                value={config.raio || '25'}
+                onChange={(e) => handleChange('raio', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="5">5 km</option>
+                <option value="10">10 km</option>
+                <option value="15">15 km</option>
+                <option value="25">25 km (padrão)</option>
+                <option value="50">50 km</option>
+                <option value="100">100 km</option>
+              </select>
+            </div>
+            
+            {/* Nível de Experiência */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <UserGroupIcon className="w-4 h-4 inline mr-1" />
+                Nível de Experiência
+              </label>
+              <select
+                value={config.nivel || 'todos'}
+                onChange={(e) => handleChange('nivel', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="todos">Todos os níveis</option>
+                <option value="entry_level">Júnior / Entry Level</option>
+                <option value="mid_level">Pleno / Mid Level</option>
+                <option value="senior_level">Sênior / Senior Level</option>
+              </select>
+            </div>
+            
+            {/* Tipo de Contrato */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <BriefcaseIcon className="w-4 h-4 inline mr-1" />
+                Tipo de Contrato
+              </label>
+              <select
+                value={config.tipoContrato || 'todos'}
+                onChange={(e) => handleChange('tipoContrato', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="todos">Todos os tipos</option>
+                <option value="fulltime">Tempo integral (CLT)</option>
+                <option value="parttime">Meio período</option>
+                <option value="contract">Contrato / PJ</option>
+                <option value="internship">Estágio</option>
+                <option value="temporary">Temporário</option>
+              </select>
+            </div>
+            
+            {/* Data de Publicação */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <CalendarDaysIcon className="w-4 h-4 inline mr-1" />
+                Publicadas nos últimos
+              </label>
+              <select
+                value={config.diasPublicacao || 'todos'}
+                onChange={(e) => handleChange('diasPublicacao', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="todos">Qualquer data</option>
+                <option value="1">24 horas</option>
+                <option value="3">3 dias</option>
+                <option value="7">7 dias</option>
+                <option value="14">14 dias</option>
+                <option value="30">30 dias</option>
+              </select>
+            </div>
+            
+            {/* Ordenar por */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <ArrowPathIcon className="w-4 h-4 inline mr-1" />
+                Ordenar por
+              </label>
+              <select
+                value={config.ordenar || 'date'}
+                onChange={(e) => handleChange('ordenar', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="date">Mais recentes</option>
+                <option value="relevance">Mais relevantes</option>
+              </select>
+            </div>
+            
+            {/* Apenas Remoto */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <GlobeAltIcon className="w-4 h-4 inline mr-1" />
+                Modalidade
+              </label>
+              <select
+                value={config.modalidade || 'todos'}
+                onChange={(e) => handleChange('modalidade', e.target.value)}
+                disabled={disabled}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
+              >
+                <option value="todos">Todas as modalidades</option>
+                <option value="remote">Apenas remoto</option>
+                <option value="presencial">Apenas presencial</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Segmentos */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <BuildingOfficeIcon className="w-4 h-4 inline mr-1" />
+              Segmentos de Interesse (opcional)
+            </label>
+            <textarea
+              value={config.segmentos}
+              onChange={(e) => handleChange('segmentos', e.target.value)}
+              disabled={disabled}
+              placeholder="Ex: Startups, Multinacionais, Consultoria, E-commerce..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:bg-gray-50"
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1062,7 +1212,14 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
           localizacao: searchConfig.localizacao.trim(),
           total_vagas_desejadas: searchConfig.quantidade,
           segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
-          tipo_vaga: searchConfig.tipoVaga || 'todos'
+          tipo_vaga: searchConfig.tipoVaga || 'todos',
+          // Parâmetros avançados
+          raio: searchConfig.raio || '25',
+          nivel: searchConfig.nivel || 'todos',
+          tipoContrato: searchConfig.tipoContrato || 'todos',
+          diasPublicacao: searchConfig.diasPublicacao || 'todos',
+          ordenar: searchConfig.ordenar || 'date',
+          modalidade: searchConfig.modalidade || 'todos'
         }
         
         console.log('🚀 Iniciando streaming com dados:', requestData)
@@ -1263,7 +1420,14 @@ const Agent1 = () => {
     localizacao: '',
     quantidade: 100,
     segmentos: '',
-    tipoVaga: 'todos'
+    tipoVaga: 'todos',
+    // Novos campos avançados
+    raio: '25',
+    nivel: 'todos',
+    tipoContrato: 'todos',
+    diasPublicacao: 'todos',
+    ordenar: 'date',
+    modalidade: 'todos'
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
