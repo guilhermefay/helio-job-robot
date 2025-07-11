@@ -79,22 +79,6 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Área de Interesse */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <BriefcaseIcon className="w-4 h-4 inline mr-1" />
-            Área de Interesse
-          </label>
-          <input
-            type="text"
-            value={config.area}
-            onChange={(e) => handleChange('area', e.target.value)}
-            disabled={disabled}
-            placeholder="Ex: Marketing Digital, Desenvolvimento, RH..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
-          />
-        </div>
-
         {/* Cargo Objetivo */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,7 +90,7 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             value={config.cargo}
             onChange={(e) => handleChange('cargo', e.target.value)}
             disabled={disabled}
-            placeholder="Ex: Analista, Coordenador, Gerente..."
+            placeholder="Ex: Desenvolvedor Python, Analista de Marketing, Gerente de Vendas..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
           />
         </div>
@@ -1207,7 +1191,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
       
       try {
         const requestData = {
-          area_interesse: searchConfig.area.trim(),
+          area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
           cargo_objetivo: searchConfig.cargo.trim(),
           localizacao: searchConfig.localizacao.trim(),
           total_vagas_desejadas: searchConfig.quantidade,
@@ -1415,7 +1399,6 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
 // Main Component
 const Agent1 = () => {
   const [searchConfig, setSearchConfig] = useState({
-    area: '',
     cargo: '',
     localizacao: '',
     quantidade: 100,
@@ -1464,7 +1447,7 @@ const Agent1 = () => {
       id: `stream_${Date.now()}`,
       timestamp: new Date().toISOString(),
       parametros: {
-        area_interesse: searchConfig.area.trim(),
+        area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
         cargo_objetivo: searchConfig.cargo.trim(),
         localizacao: searchConfig.localizacao.trim(),
         total_vagas_desejadas: searchConfig.quantidade
@@ -1510,9 +1493,8 @@ const Agent1 = () => {
     console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS - v1.0.1')
     console.log('📋 Validando campos obrigatórios...')
     
-    if (!searchConfig.area.trim() || !searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
+    if (!searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
       console.error('❌ ERRO: Campos obrigatórios não preenchidos')
-      console.log('Area:', searchConfig.area.trim())
       console.log('Cargo:', searchConfig.cargo.trim()) 
       console.log('Localização:', searchConfig.localizacao.trim())
       setError('Por favor, preencha todos os campos obrigatórios.')
@@ -1531,11 +1513,11 @@ const Agent1 = () => {
     setCurrentStep(1)
     try {
       const requestData = {
-        area_interesse: searchConfig.area.trim(),
+        area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
         cargo_objetivo: searchConfig.cargo.trim(),
         localizacao: searchConfig.localizacao.trim(),
         total_vagas_desejadas: searchConfig.quantidade,
-        segmentos_alvo: searchConfig.segmentos.trim() ? config.segmentos.trim().split(',').map(s => s.trim()) : [],
+        segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
         tipo_vaga: searchConfig.tipoVaga // Usar tipo de vaga selecionado
       }
 
@@ -1783,7 +1765,6 @@ const Agent1 = () => {
   }
 
   const canStartCollection = (
-    searchConfig.area.trim() && 
     searchConfig.cargo.trim() && 
     searchConfig.localizacao.trim() && 
     !isProcessing
