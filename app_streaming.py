@@ -43,14 +43,176 @@ except ImportError as e:
     logger.warning(f"⚠️ Erro ao importar JobScraper: {e}")
     JobScraper = None
 
+# Tentar importar IndeedScraper com fallback
+IndeedScraper = None
 try:
     from core.services.indeed_scraper import IndeedScraper
     logger.info("✅ IndeedScraper importado com sucesso")
-except ImportError as e:
-    logger.error(f"❌ Erro ao importar IndeedScraper: {e}")
-    import traceback
-    traceback.print_exc()
-    IndeedScraper = None
+except ImportError as e1:
+    logger.warning(f"⚠️ Tentando importar indeed_simple: {e1}")
+    try:
+        from core.services.indeed_simple import IndeedScraper
+        logger.info("✅ IndeedScraper (simple) importado com sucesso")
+    except ImportError as e2:
+        logger.error(f"❌ Erro ao importar ambos os scrapers: {e2}")
+        import traceback
+        traceback.print_exc()
+        
+        # Última tentativa - criar uma classe inline mínima
+        logger.warning("🔧 Criando IndeedScraper inline de emergência")
+        import requests
+        from datetime import datetime
+        
+        class IndeedScraper:
+            def __init__(self):
+                self.apify_token = os.getenv('APIFY_API_TOKEN')
+                self.base_url = "https://api.apify.com/v2"
+                self.actor_id = "borderline/indeed-scraper"
+                logger.info(f"🚨 IndeedScraper inline criado - Token: {'Sim' if self.apify_token else 'Não'}")
+                
+            def coletar_vagas_indeed(self, cargo, localizacao="são paulo", limite=20, **kwargs):
+                """Coleta vagas do Indeed via Apify"""
+                
+                if not self.apify_token:
+                    logger.error("❌ Token APIFY não configurado")
+                    return self._fallback_data(cargo, localizacao, limite)
+                
+                try:
+                    # Input básico
+                    actor_input = {
+                        "country": "br",
+                        "query": cargo,
+                        "location": localizacao,
+                        "maxRows": min(limite, 100),
+                        "radius": kwargs.get('raio_km', '25'),
+                        "sort": kwargs.get('ordenar', 'date')
+                    }
+                    
+                    # Adicionar filtros opcionais
+                    if kwargs.get('remoto'):
+                        actor_input["remote"] = True
+                    if kwargs.get('nivel'):
+                        actor_input["experienceLevel"] = kwargs['nivel']
+                    if kwargs.get('tipo_vaga'):
+                        actor_input["jobType"] = kwargs['tipo_vaga']
+                    
+                    # Fazer request
+                    actor_id_formatted = self.actor_id.replace('/', '~')
+                    
+                    logger.info(f"🔄 Iniciando coleta: {actor_input}")
+                    
+                    response = requests.post(
+                        f"{self.base_url}/acts/{actor_id_formatted}/runs",
+                        headers={"Authorization": f"Bearer {self.apify_token}"},
+                        json=actor_input,
+                        timeout=30
+                    )
+                    
+                    if response.status_code != 201:
+                        logger.error(f"❌ Erro na API: {response.status_code} - {response.text}")
+                        return self._fallback_data(cargo, localizacao, limite)
+                    
+                    run_id = response.json()["data"]["id"]
+                    logger.info(f"✅ Run criada: {run_id}")
+                    
+                    # Aguardar conclusão (máximo 2 minutos)
+                    for i in range(24):  # 24 * 5 = 120 segundos
+                        time.sleep(5)
+                        
+                        status_resp = requests.get(
+                            f"{self.base_url}/actor-runs/{run_id}",
+                            headers={"Authorization": f"Bearer {self.apify_token}"}
+                        )
+                        
+                        if status_resp.status_code == 200:
+                            status = status_resp.json()["data"]["status"]
+                            logger.info(f"📊 Status: {status}")
+                            if status == "SUCCEEDED":
+                                dataset_id = status_resp.json()["data"]["defaultDatasetId"]
+                                break
+                            elif status in ["FAILED", "ABORTED"]:
+                                logger.error(f"❌ Run falhou: {status}")
+                                return self._fallback_data(cargo, localizacao, limite)
+                    else:
+                        logger.error("❌ Timeout esperando run")
+                        return self._fallback_data(cargo, localizacao, limite)
+                    
+                    # Obter resultados
+                    results_resp = requests.get(
+                        f"{self.base_url}/datasets/{dataset_id}/items",
+                        headers={"Authorization": f"Bearer {self.apify_token}"}
+                    )
+                    
+                    if results_resp.status_code != 200:
+                        logger.error(f"❌ Erro ao obter resultados: {results_resp.status_code}")
+                        return self._fallback_data(cargo, localizacao, limite)
+                    
+                    jobs = results_resp.json()
+                    logger.info(f"✅ {len(jobs)} vagas obtidas")
+                    return [self._processar_vaga(job) for job in jobs[:limite] if job]
+                    
+                except Exception as e:
+                    logger.error(f"❌ Erro geral: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    return self._fallback_data(cargo, localizacao, limite)
+            
+            def _processar_vaga(self, job_data):
+                """Processa uma vaga para formato padrão"""
+                return {
+                    "titulo": job_data.get('title', 'Título não disponível'),
+                    "empresa": job_data.get('companyName', 'Empresa não informada'),
+                    "localizacao": job_data.get('location', {}).get('formattedAddressShort', 'Local não informado'),
+                    "descricao": job_data.get('descriptionText', ''),
+                    "fonte": "indeed",
+                    "url": job_data.get('jobUrl', ''),
+                    "data_coleta": datetime.now().isoformat(),
+                    "salario": job_data.get('salary', {}).get('salaryText', 'Não informado'),
+                    "tipo_emprego": ', '.join(job_data.get('jobType', [])) if isinstance(job_data.get('jobType'), list) else 'Não especificado',
+                    "remoto": job_data.get('isRemote', False)
+                }
+            
+            def _fallback_data(self, cargo, localizacao, limite):
+                """Dados de demonstração"""
+                logger.warning("📌 Usando dados de demonstração")
+                empresas = [
+                    ("Tech Solutions BR", "São Paulo, SP", "R$ 6.000 - R$ 10.000"),
+                    ("StartUp Inovadora", "São Paulo, SP", "R$ 7.000 - R$ 12.000"),
+                    ("Empresa Digital", "São Paulo, SP", "R$ 8.000 - R$ 14.000"),
+                    ("Fintech Brasil", "São Paulo, SP", "R$ 10.000 - R$ 15.000"),
+                    ("E-commerce Grande", "São Paulo, SP", "R$ 6.000 - R$ 10.000")
+                ]
+                
+                vagas = []
+                for i in range(min(limite, len(empresas))):
+                    empresa, local, salario = empresas[i]
+                    vagas.append({
+                        "titulo": f"{cargo}",
+                        "empresa": empresa,
+                        "localizacao": local,
+                        "salario": salario,
+                        "descricao": f"Vaga para {cargo} em {empresa}.",
+                        "fonte": "indeed_demo",
+                        "url": "#",
+                        "data_coleta": datetime.now().isoformat(),
+                        "tipo_emprego": "CLT",
+                        "remoto": i % 2 == 0
+                    })
+                
+                return vagas
+            
+            def iniciar_execucao_indeed(self, cargo, localizacao, limite=20, **kwargs):
+                """Para compatibilidade com streaming"""
+                return None, None
+            
+            def verificar_status_run(self, run_id):
+                return "UNKNOWN"
+            
+            def obter_resultados_parciais(self, dataset_id, offset=0, limit=100):
+                return []
+            
+            def cancelar_run(self, run_id):
+                return False
 
 app = Flask(__name__)
 
@@ -169,8 +331,8 @@ def collect_keywords():
                 'message': 'Configure a variável de ambiente APIFY_API_TOKEN no Railway'
             }), 500
         
-        # Verificar se os scrapers estão disponíveis
-        if JobScraper and IndeedScraper:
+        # Verificar se o scraper está disponível
+        if IndeedScraper:
             # Instanciar scraper Indeed
             scraper = IndeedScraper()
             
