@@ -59,11 +59,10 @@ class GoogleJobsScraper:
         
         try:
             # Configurar input para o actor
-            # Adicionar "vagas" ou "jobs" para melhorar resultados no Brasil
-            query_otimizada = f"{cargo} vagas" if "vaga" not in cargo.lower() else cargo
+            # IMPORTANTE: O actor adiciona "jobs" automaticamente, então NÃO adicionar
             
             actor_input = {
-                "queries": [query_otimizada],  # Termo de busca otimizado
+                "queries": [cargo],  # Apenas o cargo, sem "jobs" ou "vagas"
                 "countryCode": "br",  # Brasil
                 "languageCode": "pt-br",  # Português do Brasil
                 "maxItems": limite,  # Limite de resultados
@@ -354,12 +353,12 @@ class GoogleJobsScraper:
         
         try:
             actor_input = {
-                "queries": [cargo],
+                "queries": [cargo],  # Apenas o cargo, sem "jobs"
                 "countryCode": "br",
                 "languageCode": "pt-br",  # lowercase
                 "maxItems": limite,
                 "csvFriendlyOutput": True,
-                "includeUnfilteredResults": False,
+                "includeUnfilteredResults": True,  # Incluir mais resultados
                 "proxy": {
                     "useApifyProxy": True
                     # Não especificar apifyProxyGroups - deixar o Apify escolher
