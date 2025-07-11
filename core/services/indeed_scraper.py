@@ -107,8 +107,11 @@ class IndeedScraper:
             # Iniciar execução
             print(f"🌐 Fazendo request para Apify...")
             
+            # Formatar actor_id corretamente para a API
+            actor_id_formatted = self.actor_id.replace('/', '~')
+            
             run_response = requests.post(
-                f"{self.base_url}/acts/{self.actor_id}/runs",
+                f"{self.base_url}/acts/{actor_id_formatted}/runs",
                 headers={
                     "Authorization": f"Bearer {self.apify_token}",
                     "Content-Type": "application/json"
@@ -397,9 +400,17 @@ class IndeedScraper:
             
             print(f"📤 Enviando para Indeed actor...")
             
+            # Formatar actor_id corretamente para a API
+            actor_id_formatted = self.actor_id.replace('/', '~')
+            print(f"🔍 Actor ID formatado: {actor_id_formatted}")
+            print(f"📍 URL completa: {self.base_url}/acts/{actor_id_formatted}/runs")
+            
             run_response = requests.post(
-                f"{self.base_url}/acts/{self.actor_id}/runs",
-                params={"token": self.apify_token},
+                f"{self.base_url}/acts/{actor_id_formatted}/runs",
+                headers={
+                    "Authorization": f"Bearer {self.apify_token}",
+                    "Content-Type": "application/json"
+                },
                 json=actor_input,
                 timeout=30
             )
@@ -430,7 +441,7 @@ class IndeedScraper:
         try:
             response = requests.get(
                 f"{self.base_url}/actor-runs/{run_id}",
-                params={"token": self.apify_token},
+                headers={"Authorization": f"Bearer {self.apify_token}"},
                 timeout=10
             )
             
@@ -454,7 +465,6 @@ class IndeedScraper:
         
         try:
             params = {
-                "token": self.apify_token,
                 "format": "json",
                 "clean": "true",
                 "offset": offset,
@@ -463,6 +473,7 @@ class IndeedScraper:
             
             response = requests.get(
                 f"{self.base_url}/datasets/{dataset_id}/items",
+                headers={"Authorization": f"Bearer {self.apify_token}"},
                 params=params,
                 timeout=30
             )
@@ -497,7 +508,7 @@ class IndeedScraper:
         try:
             response = requests.post(
                 f"{self.base_url}/actor-runs/{run_id}/abort",
-                params={"token": self.apify_token},
+                headers={"Authorization": f"Bearer {self.apify_token}"},
                 timeout=10
             )
             

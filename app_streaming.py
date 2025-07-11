@@ -100,6 +100,7 @@ except ImportError as e1:
                     actor_id_formatted = self.actor_id.replace('/', '~')
                     
                     logger.info(f"🔄 Iniciando coleta: {actor_input}")
+                    logger.info(f"📍 URL: {self.base_url}/acts/{actor_id_formatted}/runs")
                     
                     response = requests.post(
                         f"{self.base_url}/acts/{actor_id_formatted}/runs",
