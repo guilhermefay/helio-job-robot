@@ -24,11 +24,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 # Tentar importar os scrapers
 try:
     from core.services.job_scraper import JobScraper
-    from core.services.indeed_scraper import IndeedScraper
-    logger.info("✅ Scrapers importados com sucesso")
+    logger.info("✅ JobScraper importado com sucesso")
 except ImportError as e:
-    logger.warning(f"⚠️ Erro ao importar scrapers: {e}")
+    logger.warning(f"⚠️ Erro ao importar JobScraper: {e}")
     JobScraper = None
+
+try:
+    from core.services.indeed_scraper import IndeedScraper
+    logger.info("✅ IndeedScraper importado com sucesso")
+except ImportError as e:
+    logger.error(f"❌ Erro ao importar IndeedScraper: {e}")
+    import traceback
+    traceback.print_exc()
     IndeedScraper = None
 
 app = Flask(__name__)
@@ -373,9 +380,11 @@ def collect_jobs_stream():
             yield f"data: {json.dumps({'status': 'config_ok', 'message': 'Configuração verificada', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar se o scraper está disponível
+            logger.info(f"🔍 IndeedScraper disponível? {IndeedScraper is not None}")
             if IndeedScraper:
                 logger.info("✅ Indeed Scraper disponível")
                 indeed_scraper = IndeedScraper()
+                logger.info(f"🔑 Token Apify no scraper: {'Sim' if indeed_scraper.apify_token else 'Não'}")
                 
                 # Verificar credenciais
                 if not indeed_scraper.apify_token:
@@ -672,6 +681,8 @@ logger.info("🚀 HELIO JOB ROBOT - INICIALIZANDO")
 logger.info(f"📍 Ambiente: {'Railway' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Local'}")
 logger.info(f"🔑 PORT: {os.environ.get('PORT', 'Não definido')}")
 logger.info(f"🔑 APIFY_API_TOKEN: {'Configurado' if os.environ.get('APIFY_API_TOKEN') else 'Não configurado'}")
+logger.info(f"📁 Working Directory: {os.getcwd()}")
+logger.info(f"📂 Python Path: {sys.path[:3]}...")
 logger.info("=" * 50)
 
 if __name__ == '__main__':
