@@ -59,16 +59,19 @@ class GoogleJobsScraper:
         
         try:
             # Configurar input para o actor
+            # Adicionar "vagas" ou "jobs" para melhorar resultados no Brasil
+            query_otimizada = f"{cargo} vagas" if "vaga" not in cargo.lower() else cargo
+            
             actor_input = {
-                "queries": [cargo],  # Termo de busca - SEM adicionar "jobs"
+                "queries": [query_otimizada],  # Termo de busca otimizado
                 "countryCode": "br",  # Brasil
-                "languageCode": "pt-br",  # Português do Brasil (lowercase)
+                "languageCode": "pt-br",  # Português do Brasil
                 "maxItems": limite,  # Limite de resultados
                 "csvFriendlyOutput": True,  # Formato simplificado
-                "includeUnfilteredResults": False,  # Apenas resultados de qualidade
+                "includeUnfilteredResults": True,  # Incluir mais resultados
                 "proxy": {
-                    "useApifyProxy": True,
-                    "apifyProxyGroups": ["GOOGLE_SERP"]  # Usar GOOGLE_SERP como recomendado nos logs
+                    "useApifyProxy": True
+                    # Não especificar apifyProxyGroups - deixar o Apify escolher
                 }
             }
             
@@ -358,8 +361,8 @@ class GoogleJobsScraper:
                 "csvFriendlyOutput": True,
                 "includeUnfilteredResults": False,
                 "proxy": {
-                    "useApifyProxy": True,
-                    "apifyProxyGroups": ["GOOGLE_SERP"]  # Usar GOOGLE_SERP
+                    "useApifyProxy": True
+                    # Não especificar apifyProxyGroups - deixar o Apify escolher
                 }
             }
             
