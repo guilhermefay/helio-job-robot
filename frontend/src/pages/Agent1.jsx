@@ -1401,7 +1401,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
             </button>
           )}
           <button 
-            onClick={onClose}
+            onClick={() => onClose(error || '')}
             className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             {error || status === 'concluido' || status === 'finalizado' ? 'Fechar' : 'Ocultar'}
@@ -1497,7 +1497,11 @@ const Agent1 = () => {
   }
 
   const handleStreamError = (errorMessage) => {
-    setError(errorMessage)
+    // Garantir que sempre seja uma string
+    const message = typeof errorMessage === 'string' ? errorMessage : ''
+    if (message) {
+      setError(message)
+    }
     setIsStreamActive(false)
     setIsProcessing(false)
   }

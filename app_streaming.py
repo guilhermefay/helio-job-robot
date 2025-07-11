@@ -478,8 +478,47 @@ def collect_jobs_stream():
                     yield f"data: {json.dumps({'error': f'Erro durante coleta: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             else:
-                # Modo demonstração
-                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Indeed Scraper não disponível', 'timestamp': datetime.now().isoformat()})}\n\n"
+                # Modo demonstração com dados de exemplo
+                logger.warning("⚠️ Indeed Scraper não disponível - usando modo demo")
+                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Usando dados de demonstração', 'timestamp': datetime.now().isoformat()})}\n\n"
+                
+                # Simular processo de coleta
+                yield f"data: {json.dumps({'status': 'coletando', 'message': 'Gerando vagas de demonstração...', 'timestamp': datetime.now().isoformat()})}\n\n"
+                time.sleep(1)
+                
+                # Gerar vagas de demonstração
+                vagas_demo = []
+                empresas_demo = [
+                    ('Empresa Tech SP', 'São Paulo, SP', 'R$ 8.000 - R$ 12.000'),
+                    ('Startup Inovadora', 'São Paulo, SP', 'R$ 7.000 - R$ 11.000'),
+                    ('Consultoria Digital', 'São Paulo, SP', 'R$ 9.000 - R$ 14.000'),
+                    ('Fintech Brasil', 'São Paulo, SP', 'R$ 10.000 - R$ 15.000'),
+                    ('E-commerce Grande', 'São Paulo, SP', 'R$ 6.000 - R$ 10.000')
+                ]
+                
+                for i, (empresa, local, salario) in enumerate(empresas_demo[:min(quantidade, 5)]):
+                    vaga = {
+                        'titulo': f'{cargo} - {["Júnior", "Pleno", "Sênior"][i % 3]}',
+                        'empresa': empresa,
+                        'localizacao': local,
+                        'salario': salario,
+                        'descricao': f'Vaga para {cargo} em {empresa}. Procuramos profissionais com experiência em desenvolvimento.',
+                        'fonte': 'demo',
+                        'url': f'https://example.com/vaga/{i+1}',
+                        'data_publicacao': f'{i+1} dia(s) atrás',
+                        'tipo_emprego': 'CLT',
+                        'nivel_experiencia': ['Júnior', 'Pleno', 'Sênior'][i % 3],
+                        'remoto': i % 2 == 0
+                    }
+                    vagas_demo.append(vaga)
+                    
+                    # Enviar vaga individual
+                    yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': [vaga], 'total_atual': i+1, 'timestamp': datetime.now().isoformat()})}\n\n"
+                    time.sleep(0.5)
+                
+                # Finalizar
+                yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': len(vagas_demo), 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_demo, 'demo_mode': True, 'timestamp': datetime.now().isoformat()})}\n\n"
             
         except Exception as e:
             logger.error(f"Erro crítico: {e}")
