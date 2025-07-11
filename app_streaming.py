@@ -20,6 +20,20 @@ logger = logging.getLogger(__name__)
 
 # Adicionar path para os módulos
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+logger.info(f"Python path: {sys.path[0]}")
+logger.info(f"Current dir: {os.getcwd()}")
+logger.info(f"Dir contents: {os.listdir('.')[:10]}...")
+
+# Verificar se os arquivos existem
+if os.path.exists('core/services/indeed_scraper.py'):
+    logger.info("📁 indeed_scraper.py existe!")
+else:
+    logger.error("❌ indeed_scraper.py NÃO existe!")
+
+if os.path.exists('core/services/__init__.py'):
+    logger.info("📁 __init__.py existe em services!")
+else:
+    logger.error("❌ __init__.py NÃO existe em services!")
 
 # Tentar importar os scrapers
 try:
@@ -489,6 +503,8 @@ def collect_jobs_stream():
             else:
                 # Modo demonstração com dados de exemplo
                 logger.warning("⚠️ Indeed Scraper não disponível - usando modo demo")
+                logger.warning(f"IndeedScraper é None? {IndeedScraper is None}")
+                logger.warning(f"Tipo de IndeedScraper: {type(IndeedScraper)}")
                 yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Usando dados de demonstração', 'timestamp': datetime.now().isoformat()})}\n\n"
                 
                 # Simular processo de coleta
