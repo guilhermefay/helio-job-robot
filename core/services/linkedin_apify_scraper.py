@@ -60,21 +60,13 @@ class LinkedInApifyScraper:
             return self._fallback_linkedin_data(cargo, localizacao, limite)
         
         try:
-            # 🎯 INPUT PARA CATHO: Mesmos parâmetros do iniciar_execucao_apify
+            # 🎯 INPUT PARA CATHO: Formato simplificado
             input_data = {
-                "query": cargo,  # Termo de busca principal
-                "search": cargo,  # Termo de busca (fallback)
-                "keyword": cargo,  # Palavra-chave (fallback)
-                "location": localizacao,  # Local da vaga  
-                "city": localizacao,  # Cidade (fallback)
-                "estado": "SP",  # Estado específico
-                "maxItems": limite,  # Número máximo de itens
-                "maxResults": limite,  # Número máximo (fallback)
-                "maxPages": max(1, limite // 20),  # Páginas a percorrer
-                "startPage": 1,  # Página inicial
+                "query": cargo,
+                "location": localizacao,
+                "maxItems": limite * 3,  # Pegar mais para filtrar depois
                 "proxy": {
-                    "useApifyProxy": True,
-                    "apifyProxyGroups": ["RESIDENTIAL"]
+                    "useApifyProxy": True
                 }
             }
             
@@ -191,9 +183,47 @@ class LinkedInApifyScraper:
             # 🔧 PROCESSAR RESULTADOS
             processed_jobs = self._processar_resultados_apify(vagas_finais, cargo)
             
-            print(f"🎉 RESULTADO FINAL: {len(processed_jobs)} vagas processadas!")
-            print(f"📈 Taxa de sucesso: {len(processed_jobs)/len(vagas_finais)*100:.1f}%")
-            return processed_jobs
+            # 🎯 FILTRAR VAGAS RELEVANTES
+            # Como o actor não está filtrando corretamente, vamos filtrar aqui
+            print(f"🔍 Filtrando vagas relevantes para: {cargo}")
+            
+            vagas_filtradas = []
+            palavras_cargo = cargo.lower().split()
+            
+            for vaga in processed_jobs:
+                titulo_lower = vaga.get('titulo', '').lower()
+                descricao_lower = vaga.get('descricao', '').lower()
+                
+                # Verificar se pelo menos uma palavra do cargo está no título ou descrição
+                relevante = False
+                for palavra in palavras_cargo:
+                    if palavra in titulo_lower or palavra in descricao_lower[:500]:
+                        relevante = True
+                        break
+                
+                # Se for Desenvolvedor, aceitar também: programador, developer, dev, software
+                if 'desenvolvedor' in cargo.lower():
+                    termos_dev = ['developer', 'dev ', 'programador', 'software', 'engenheiro', 'engineer', 'backend', 'frontend', 'fullstack']
+                    for termo in termos_dev:
+                        if termo in titulo_lower:
+                            relevante = True
+                            break
+                
+                if relevante:
+                    vagas_filtradas.append(vaga)
+                else:
+                    print(f"   ❌ Filtrada: {vaga.get('titulo', 'Sem título')}")
+            
+            # Se não encontrou nenhuma relevante, retornar todas (melhor que nada)
+            if not vagas_filtradas:
+                print(f"⚠️ Nenhuma vaga relevante encontrada. Retornando todas as {len(processed_jobs)} vagas.")
+                vagas_filtradas = processed_jobs[:limite]
+            else:
+                print(f"✅ {len(vagas_filtradas)} vagas relevantes de {len(processed_jobs)} totais")
+                vagas_filtradas = vagas_filtradas[:limite]
+            
+            print(f"🎉 RESULTADO FINAL: {len(vagas_filtradas)} vagas retornadas!")
+            return vagas_filtradas
                 
         except Exception as e:
             print(f"🚨 Erro no scraping LinkedIn: {e}")
@@ -574,24 +604,21 @@ class LinkedInApifyScraper:
         
         try:
             # Parâmetros para o actor da Catho easyapi
-            # Baseado em scrapers típicos da Catho
-            # IMPORTANTE: O campo de busca precisa ser bem específico
+            # IMPORTANTE: Este actor parece usar um formato específico
+            
             actor_input = {
-                "query": cargo,  # Termo de busca principal
-                "search": cargo,  # Termo de busca (fallback)
-                "keyword": cargo,  # Palavra-chave (fallback)
-                "location": localizacao,  # Local da vaga  
-                "city": localizacao,  # Cidade (fallback)
-                "estado": "SP",  # Estado específico
-                "maxItems": limite,  # Número máximo de itens
-                "maxResults": limite,  # Número máximo (fallback)
-                "maxPages": max(1, limite // 20),  # Páginas a percorrer
-                "startPage": 1,  # Página inicial
+                # Tentar formato mais simples primeiro
+                "query": cargo,
+                "location": localizacao,
+                "maxItems": limite,
+                
+                # Se o actor usar proxy
                 "proxy": {
-                    "useApifyProxy": True,
-                    "apifyProxyGroups": ["RESIDENTIAL"]
+                    "useApifyProxy": True
                 }
             }
+            
+            print(f"🔍 Tentando formato simplificado de input...")
             
             print(f"📤 Enviando para Catho actor com input: {json.dumps(actor_input, indent=2)}")
             
