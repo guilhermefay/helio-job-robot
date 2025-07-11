@@ -594,7 +594,7 @@ const ResultsDisplay = ({ results }) => {
               <h3 className="text-sm font-medium text-yellow-800">🎭 Modo Demonstração Ativo</h3>
               <p className="text-xs text-yellow-700 mt-1">
                 Os dados exibidos são exemplos para demonstrar a funcionalidade. 
-                Para coleta real, configure APIs de job boards (LinkedIn, Indeed, Google Jobs).
+                Para coleta real, configure APIs de job boards (LinkedIn, Indeed).
               </p>
             </div>
           </div>
@@ -1179,7 +1179,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                     </div>
                   </div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                    Conectando ao Google Jobs...
+                    Conectando ao Indeed...
                   </h4>
                   <p className="text-xs text-gray-600">
                     Aguarde enquanto iniciamos a busca por vagas
@@ -1273,8 +1273,8 @@ const Agent1 = () => {
 
   const stepLabels = [
     'Configurando busca',
-    'Coletando vagas do Google Jobs',
-    'Coletando vagas do Google Jobs',
+    'Coletando vagas do Indeed',
+    'Coletando vagas do Indeed',
     'Coletando fontes complementares',
     'Extraindo palavras-chave',
     'Categorizando termos',

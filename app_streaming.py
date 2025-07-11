@@ -24,12 +24,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 # Tentar importar os scrapers
 try:
     from core.services.job_scraper import JobScraper
-    from core.services.google_jobs_scraper import GoogleJobsScraper
+    from core.services.indeed_scraper import IndeedScraper
     logger.info("✅ Scrapers importados com sucesso")
 except ImportError as e:
     logger.warning(f"⚠️ Erro ao importar scrapers: {e}")
     JobScraper = None
-    GoogleJobsScraper = None
+    IndeedScraper = None
 
 app = Flask(__name__)
 
@@ -141,24 +141,24 @@ def collect_keywords():
             }), 500
         
         # Verificar se os scrapers estão disponíveis
-        if JobScraper and GoogleJobsScraper:
-            # Instanciar scraper Google Jobs
-            scraper = GoogleJobsScraper()
+        if JobScraper and IndeedScraper:
+            # Instanciar scraper Indeed
+            scraper = IndeedScraper()
             
             # Executar coleta
-            logger.info("🚀 Iniciando scraping com Google Jobs...")
+            logger.info("🚀 Iniciando scraping com Indeed...")
             logger.info(f"Token APIFY presente: {'Sim' if scraper.apify_token else 'Não'}")
-            resultado_scraping = scraper.coletar_vagas_google(
+            resultado_scraping = scraper.coletar_vagas_indeed(
                 cargo=cargo,
                 localizacao=localizacao,
                 limite=quantidade
             )
             
             if not resultado_scraping:
-                logger.error("❌ Nenhuma vaga coletada pelo Google Jobs")
+                logger.error("❌ Nenhuma vaga coletada pelo Indeed")
                 return jsonify({
                     'error': 'Nenhuma vaga encontrada',
-                    'message': 'O Google Jobs não retornou vagas para os parâmetros informados'
+                    'message': 'O Indeed não retornou vagas para os parâmetros informados'
                 }), 404
             
             # Processar resultado
@@ -168,7 +168,7 @@ def collect_keywords():
             # Montar resposta final
             resultado = {
                 'apify_mode': True,
-                'id': f'google_{int(time.time())}',
+                'id': f'indeed_{int(time.time())}',
                 'timestamp': datetime.now().isoformat(),
                 'parametros': {
                     'area_interesse': area,
@@ -183,17 +183,17 @@ def collect_keywords():
                     'tempoColeta': 'N/A'
                 },
                 'transparencia': {
-                    'fontes_utilizadas': ['Google Jobs via APIFY'],
-                    'metodo_coleta': 'APIFY Google Jobs Scraper',
+                    'fontes_utilizadas': ['Indeed via APIFY'],
+                    'metodo_coleta': 'APIFY Indeed Scraper',
                     'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
-                    'observacoes': 'Dados reais coletados do Google Jobs via APIFY API',
-                    'actor_id': 'epctex/google-jobs-scraper',
+                    'observacoes': 'Dados reais coletados do Indeed via APIFY API',
+                    'actor_id': 'borderline/indeed-scraper',
                     'run_id': 'N/A'
                 },
                 'vagas': vagas_processadas
             }
             
-            logger.info(f"✅ Coleta Google Jobs finalizada: {total_vagas} vagas")
+            logger.info(f"✅ Coleta Indeed finalizada: {total_vagas} vagas")
             return jsonify(resultado)
         
         else:
@@ -271,11 +271,11 @@ def cancel_collection():
             return jsonify({'error': 'run_id não fornecido'}), 400
         
         # Verificar se os scrapers estão disponíveis
-        if GoogleJobsScraper:
-            google_scraper = GoogleJobsScraper()
+        if IndeedScraper:
+            indeed_scraper = IndeedScraper()
             
             # Cancelar o run
-            success = google_scraper.cancelar_run(run_id)
+            success = indeed_scraper.cancelar_run(run_id)
             
             if success:
                 return jsonify({
@@ -303,7 +303,7 @@ def cancel_collection():
 
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 def collect_jobs_stream():
-    """Endpoint de streaming de coleta de vagas (Google Jobs)"""
+    """Endpoint de streaming de coleta de vagas (Indeed)"""
     
     if request.method == 'OPTIONS':
         return '', 200
@@ -322,7 +322,7 @@ def collect_jobs_stream():
     def generate_stream():
         try:
             # Enviar confirmação inicial
-            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta no Google Jobs para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta no Indeed para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar token APIFY
             apify_token = os.getenv('APIFY_API_TOKEN')
@@ -333,20 +333,20 @@ def collect_jobs_stream():
             yield f"data: {json.dumps({'status': 'config_ok', 'message': 'Configuração verificada', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar se o scraper está disponível
-            if GoogleJobsScraper:
-                logger.info("✅ Google Jobs Scraper disponível")
-                google_scraper = GoogleJobsScraper()
+            if IndeedScraper:
+                logger.info("✅ Indeed Scraper disponível")
+                indeed_scraper = IndeedScraper()
                 
                 # Verificar credenciais
-                if not google_scraper.apify_token:
+                if not indeed_scraper.apify_token:
                     yield f"data: {json.dumps({'error': 'Token APIFY não configurado', 'timestamp': datetime.now().isoformat()})}\n\n"
                     return
                 
-                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Google Jobs scraper inicializado', 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Indeed scraper inicializado', 'timestamp': datetime.now().isoformat()})}\n\n"
                 
                 # Iniciar coleta
                 try:
-                    run_id, dataset_id = google_scraper.iniciar_execucao_google(
+                    run_id, dataset_id = indeed_scraper.iniciar_execucao_indeed(
                         cargo=cargo,
                         localizacao=localizacao,
                         limite=quantidade,
@@ -354,7 +354,7 @@ def collect_jobs_stream():
                     )
                     
                     if not run_id:
-                        yield f"data: {json.dumps({'error': 'Erro ao iniciar coleta no Google Jobs', 'timestamp': datetime.now().isoformat()})}\n\n"
+                        yield f"data: {json.dumps({'error': 'Erro ao iniciar coleta no Indeed', 'timestamp': datetime.now().isoformat()})}\n\n"
                         return
                     
                     yield f"data: {json.dumps({'status': 'coleta_iniciada', 'run_id': run_id, 'dataset_id': dataset_id, 'timestamp': datetime.now().isoformat()})}\n\n"
@@ -362,7 +362,7 @@ def collect_jobs_stream():
                     # Polling com timeout
                     vagas_coletadas = []
                     tempo_inicio = time.time()
-                    timeout_segundos = 300  # 5 minutos (Google Jobs é mais rápido)
+                    timeout_segundos = 300  # 5 minutos
                     
                     while True:
                         tempo_decorrido = time.time() - tempo_inicio
@@ -372,11 +372,11 @@ def collect_jobs_stream():
                             break
                         
                         # Verificar status
-                        status_run = google_scraper.verificar_status_run(run_id)
+                        status_run = indeed_scraper.verificar_status_run(run_id)
                         yield f"data: {json.dumps({'status': 'monitorando', 'run_status': status_run, 'timestamp': datetime.now().isoformat()})}\n\n"
                         
                         # Obter resultados parciais
-                        novos_resultados = google_scraper.obter_resultados_parciais(
+                        novos_resultados = indeed_scraper.obter_resultados_parciais(
                             dataset_id, 
                             offset=len(vagas_coletadas),
                             limit=quantidade
@@ -390,7 +390,7 @@ def collect_jobs_stream():
                             if status_run == 'SUCCEEDED':
                                 logger.info(f"✅ Run finalizada com sucesso!")
                                 # Pegar resultados finais se houver mais
-                                resultados_finais = google_scraper.obter_resultados_parciais(
+                                resultados_finais = indeed_scraper.obter_resultados_parciais(
                                     dataset_id,
                                     offset=len(vagas_coletadas),
                                     limit=quantidade - len(vagas_coletadas)
@@ -400,7 +400,7 @@ def collect_jobs_stream():
                                     yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': resultados_finais, 'total_atual': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                             break
                         
-                        time.sleep(5)  # Check mais frequente para Google Jobs
+                        time.sleep(5)  # Check a cada 5 segundos
                     
                     # Finalizar
                     logger.info(f"🏁 Finalizando streaming com {len(vagas_coletadas)} vagas")
@@ -410,12 +410,12 @@ def collect_jobs_stream():
                     yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
                     
                 except Exception as e:
-                    logger.error(f"Erro durante coleta Google Jobs: {e}")
+                    logger.error(f"Erro durante coleta Indeed: {e}")
                     yield f"data: {json.dumps({'error': f'Erro durante coleta: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             else:
                 # Modo demonstração
-                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Google Jobs Scraper não disponível', 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Indeed Scraper não disponível', 'timestamp': datetime.now().isoformat()})}\n\n"
             
         except Exception as e:
             logger.error(f"Erro crítico: {e}")
