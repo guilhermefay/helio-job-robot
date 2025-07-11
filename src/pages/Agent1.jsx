@@ -132,13 +132,13 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
           >
             <option value={20}>20 vagas (teste rápido)</option>
             <option value={50}>50 vagas</option>
-            <option value={100}>100 vagas</option>
-            <option value={150}>150 vagas</option>
-            <option value={200}>200 vagas</option>
-            <option value={300}>300 vagas</option>
-            <option value={500}>500 vagas (5-7 min)</option>
-            <option value={1000}>1000 vagas (8-10 min)</option>
+            <option value={100}>100 vagas (limite máximo)</option>
           </select>
+          {config.quantidade > 100 && (
+            <p className="text-xs text-yellow-600 mt-1">
+              ⚠️ Limite ajustado para 100 vagas para economizar custos
+            </p>
+          )}
         </div>
 
         {/* Tipo de Vaga */}
@@ -159,6 +159,14 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             <option value="hibrido">Híbrido</option>
           </select>
         </div>
+      </div>
+      
+      {/* Aviso sobre limite */}
+      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          <InformationCircleIcon className="w-4 h-4 inline mr-1" />
+          <strong>Nota:</strong> Para economizar custos, limitamos a busca a 100 vagas por pesquisa (custo aprox. US$ 0,50).
+        </p>
       </div>
 
       {/* Segmentos */}

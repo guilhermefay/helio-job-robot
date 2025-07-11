@@ -53,9 +53,17 @@ class IndeedScraper:
             nivel: entry_level, mid_level, senior_level
         """
         
+        # Limitar a 100 para economizar custos (Indeed cobra $5 por 1000 resultados)
+        limite_original = limite
+        limite = min(limite, 100)
+        
         print("=" * 50)
         print("🔍 INICIANDO coletar_vagas_indeed")
-        print(f"📝 Parâmetros: cargo='{cargo}', local='{localizacao}', limite={limite}")
+        print(f"📝 Parâmetros: cargo='{cargo}', local='{localizacao}'")
+        if limite_original > 100:
+            print(f"⚠️  Limite ajustado de {limite_original} para {limite} (máximo permitido: 100)")
+        else:
+            print(f"📝 Limite: {limite}")
         print(f"🔑 Token APIFY: {'✅ PRESENTE' if self.apify_token else '❌ AUSENTE'}")
         print("=" * 50)
         
@@ -74,7 +82,7 @@ class IndeedScraper:
                 "country": "br",  # Brasil
                 "query": cargo,
                 "location": localizacao,
-                "maxRows": limite,
+                "maxRows": limite,  # Já limitado a 100 acima
                 "radius": raio_milhas,
                 "sort": "date",  # Mais recentes primeiro
             }
@@ -356,11 +364,14 @@ class IndeedScraper:
             if raio_milhas not in ["5", "10", "15", "25", "50", "100"]:
                 raio_milhas = "25"
             
+            # Limitar a 100 para economizar custos
+            limite_seguro = min(limite, 100)
+            
             actor_input = {
                 "country": "br",
                 "query": cargo,
                 "location": localizacao,
-                "maxRows": limite,
+                "maxRows": limite_seguro,  # Máximo 100 para economizar
                 "radius": raio_milhas,
                 "sort": "date"
             }

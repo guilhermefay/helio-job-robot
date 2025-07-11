@@ -127,7 +127,7 @@ def collect_keywords():
         cargo = data.get('cargo_objetivo', 'Desenvolvedor')
         area = data.get('area_interesse', 'Tecnologia')
         localizacao = data.get('localizacao', 'São Paulo')
-        quantidade = data.get('total_vagas_desejadas', 20)
+        quantidade = min(data.get('total_vagas_desejadas', 20), 100)  # Limitar a 100 para economizar
         
         logger.info(f"📋 Parâmetros: cargo={cargo}, área={area}, local={localizacao}, qtd={quantidade}")
         
@@ -316,7 +316,7 @@ def collect_jobs_stream():
     cargo = data.get('cargo_objetivo', 'Desenvolvedor')
     area = data.get('area_interesse', 'Tecnologia')
     localizacao = data.get('localizacao', 'São Paulo')
-    quantidade = data.get('total_vagas_desejadas', 20)
+    quantidade = min(data.get('total_vagas_desejadas', 20), 100)  # Limitar a 100 para economizar
     raio_km = data.get('raio_km', 50)
     
     def generate_stream():
