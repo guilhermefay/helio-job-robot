@@ -752,22 +752,22 @@ const ResultsDisplay = ({ results }) => {
               <h3 className="text-sm font-medium text-yellow-800">🎭 Modo Demonstração Ativo</h3>
               <p className="text-xs text-yellow-700 mt-1">
                 Os dados exibidos são exemplos para demonstrar a funcionalidade. 
-                Para coleta real, configure APIs de job boards (LinkedIn, Indeed).
+                Para coleta real, configure a API do Indeed via Apify.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* LinkedIn/Apify Info */}
-      {!transparencia?.vagas_coletadas?.some(vaga => vaga.fonte?.toLowerCase().includes('linkedin')) && (
+      {/* Indeed/Apify Info */}
+      {!transparencia?.vagas_coletadas?.some(vaga => vaga.fonte?.toLowerCase().includes('indeed')) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start">
             <InformationCircleIcon className="w-5 h-5 text-blue-600 mr-2 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-blue-800">💡 Dica: Ative a coleta do LinkedIn com Apify</h3>
+              <h3 className="text-sm font-medium text-blue-800">💡 Dica: Ative a coleta do Indeed com Apify</h3>
               <p className="text-xs text-blue-700 mt-1 mb-2">
-                Para coletar vagas reais do LinkedIn, configure o Apify (mais barato e confiável que Selenium):
+                Para coletar vagas reais do Indeed, configure o Apify:
               </p>
               <ol className="text-xs text-blue-700 space-y-1 ml-4">
                 <li>1. Crie uma conta gratuita em <a href="https://apify.com" target="_blank" rel="noopener noreferrer" className="underline">apify.com</a></li>
@@ -776,7 +776,7 @@ const ResultsDisplay = ({ results }) => {
                 <li>4. Reinicie o servidor backend</li>
               </ol>
               <p className="text-xs text-blue-600 mt-2">
-                ✨ Actor recomendado: <a href="https://apify.com/curious_coder/linkedin-jobs-scraper" target="_blank" rel="noopener noreferrer" className="underline font-medium">curious_coder/linkedin-jobs-scraper</a> (mais barato)
+                ✨ Actor usado: <a href="https://apify.com/borderline/indeed-scraper" target="_blank" rel="noopener noreferrer" className="underline font-medium">borderline/indeed-scraper</a> (US$ 0,50 por 100 vagas)
               </p>
             </div>
           </div>
@@ -993,7 +993,7 @@ const ResultsDisplay = ({ results }) => {
           <div className="mt-4 p-3 bg-purple-100 rounded-lg">
             <p className="text-xs text-purple-800">
               <strong>💡 Como usar:</strong> Estas são as 10 palavras mais estratégicas para otimizar seu currículo. 
-              Use 3-4 no título do LinkedIn e distribua as demais no resumo e experiências.
+              Use 3-4 no título do currículo e distribua as demais no resumo e experiências.
             </p>
           </div>
         </div>
@@ -1129,7 +1129,7 @@ const ResultsDisplay = ({ results }) => {
           <p className="text-sm text-green-800">• Execute o Agente 2 para otimizar seu currículo com as palavras-chave encontradas</p>
           <p className="text-sm text-green-800">• Incorpore as palavras-chave técnicas em suas experiências profissionais</p>
           <p className="text-sm text-green-800">• Desenvolva as competências comportamentais identificadas como prioritárias</p>
-          <p className="text-sm text-green-800">• Prepare-se para otimização do LinkedIn com essas palavras-chave</p>
+          <p className="text-sm text-green-800">• Prepare-se para otimização do currículo e LinkedIn com essas palavras-chave</p>
         </div>
       </div>
     </div>
@@ -1478,13 +1478,13 @@ const Agent1 = () => {
       },
       fontes: [
         {
-          nome: 'Google Jobs',
+          nome: 'Indeed',
           vagas: vagas.length,
           taxa: 100
         }
       ],
       transparencia: {
-        fontes_utilizadas: ['Google Jobs'],
+        fontes_utilizadas: ['Indeed'],
         metodo_coleta: 'Streaming em tempo real',
         filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
         observacoes: 'Coleta realizada via streaming'
@@ -1919,7 +1919,7 @@ const Agent1 = () => {
                 <h4 className="font-semibold text-purple-800 mb-2">📊 Fase 1: Pesquisa Ampla</h4>
                 <p className="text-purple-700 text-2xl font-bold mb-1">20-40</p>
                 <p className="text-purple-600 text-xs">palavras-chave iniciais</p>
-                <p className="text-gray-600 text-xs mt-2">Análise de no mínimo 20 vagas ou perfis do LinkedIn</p>
+                <p className="text-gray-600 text-xs mt-2">Análise de no mínimo 20 vagas reais do mercado</p>
               </div>
               <div className="bg-white rounded-lg p-4">
                 <h4 className="font-semibold text-purple-800 mb-2">🎯 Fase 2: Priorização</h4>
@@ -1928,10 +1928,10 @@ const Agent1 = () => {
                 <p className="text-gray-600 text-xs mt-2">Base para otimizar título e resumo</p>
               </div>
               <div className="bg-white rounded-lg p-4">
-                <h4 className="font-semibold text-purple-800 mb-2">💼 LinkedIn</h4>
+                <h4 className="font-semibold text-purple-800 mb-2">💼 Currículo/LinkedIn</h4>
                 <p className="text-purple-700 text-2xl font-bold mb-1">3-4 / 50</p>
                 <p className="text-purple-600 text-xs">no título / competências</p>
-                <p className="text-gray-600 text-xs mt-2">Título: 3-4 fortes<br/>Competências: exatas 50</p>
+                <p className="text-gray-600 text-xs mt-2">Título: 3-4 principais<br/>Competências: distribuídas</p>
               </div>
             </div>
             <div className="mt-4 p-3 bg-purple-100 rounded-lg">
