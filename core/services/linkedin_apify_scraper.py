@@ -252,21 +252,16 @@ class LinkedInApifyScraper:
         Processa uma única vaga do LinkedIn/Apify para o formato padrão
         """
         try:
-            # Debug: ver estrutura dos dados
-            print(f"🔍 DEBUG - Estrutura da vaga recebida:")
-            print(f"   Chaves: {list(job_data.keys())[:10]}")  # Primeiras 10 chaves
+            # IMPORTANTE: O Catho actor retorna os dados dentro de job_customized_data
+            custom_data = job_data.get('job_customized_data', {})
             
-            # Verificar possíveis campos de título
-            titulo_campos = ['titulo', 'title', 'jobTitle', 'cargo', 'position', 'nome']
-            for campo in titulo_campos:
-                if campo in job_data:
-                    print(f"   Campo '{campo}' encontrado: {job_data.get(campo, '')[:50]}...")
-                    
-            # Verificar possíveis campos de empresa
-            empresa_campos = ['anunciante', 'empresa', 'company', 'employer', 'companyName']
-            for campo in empresa_campos:
-                if campo in job_data:
-                    print(f"   Campo '{campo}' encontrado: {str(job_data.get(campo))[:50]}...")
+            # Usar job_customized_data como fonte principal
+            original_data = job_data  # Guardar dados originais
+            if isinstance(custom_data, dict) and custom_data:
+                job_data = custom_data  # Usar os dados customizados como principais
+            
+            # Manter referência para URL e outros campos do nível superior
+            search_url = original_data.get('searchUrl', '')
             
             # Mapeamento baseado na estrutura real do Catho
             # Extrair informações da empresa com múltiplos fallbacks
@@ -355,13 +350,19 @@ class LinkedInApifyScraper:
             )
             
             # Extrair URL com fallbacks
-            url = (
-                job_data.get('searchUrl') or
-                job_data.get('url') or
-                job_data.get('link') or
-                job_data.get('jobUrl') or
-                ''
-            )
+            # Para Catho, construir URL usando o ID da vaga
+            job_id = job_data.get('id') or job_data.get('job_id') or ''
+            if job_id and not job_data.get('url'):
+                # Construir URL da vaga específica no Catho
+                url = f"https://www.catho.com.br/vagas/{job_id}"
+            else:
+                url = (
+                    job_data.get('url') or
+                    job_data.get('link') or
+                    job_data.get('jobUrl') or
+                    search_url or  # Usar search_url como último fallback
+                    ''
+                )
             
             vaga = {
                 "titulo": titulo,
