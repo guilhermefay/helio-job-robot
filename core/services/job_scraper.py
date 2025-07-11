@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from .query_expander import QueryExpanderV2
 from .location_expander import LocationExpander
-from .linkedin_apify_scraper import LinkedInApifyScraper
+from .google_jobs_scraper import GoogleJobsScraper
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -42,12 +42,12 @@ class JobScraper:
         self.query_expander = QueryExpanderV2()
         self.location_expander = LocationExpander()
         
-        # Serviço único de scraping (Apify)
-        self.scraper = LinkedInApifyScraper()
+        # Serviço único de scraping (Google Jobs via Apify)
+        self.scraper = GoogleJobsScraper()
         
         # Verificar configuração
         if not self.scraper.verificar_credenciais():
-            logger.warning("⚠️ Apify não configurado. Configure APIFY_API_TOKEN no .env")
+            logger.warning("⚠️ Google Jobs Scraper não configurado. Configure APIFY_API_TOKEN no .env")
         
         # Configurações
         self.max_retries = 3
@@ -257,7 +257,7 @@ class JobScraper:
         for tentativa in range(self.max_retries):
             try:
                 # Delegar para o serviço de scraping
-                vagas = self.scraper.coletar_vagas_linkedin(
+                vagas = self.scraper.coletar_vagas_google(
                     cargo=cargo,
                     localizacao=localizacao,
                     limite=limite
@@ -314,8 +314,8 @@ class JobScraper:
             
             logger.info(f"🚀 Iniciando streaming: {cargo_principal} em {local_principal}")
             
-            # Iniciar execução no Apify e retornar IDs
-            run_id, dataset_id = self.scraper.iniciar_execucao_apify(cargo_principal, local_principal, total_vagas_desejadas)
+            # Iniciar execução no Google Jobs via Apify e retornar IDs
+            run_id, dataset_id = self.scraper.iniciar_execucao_google(cargo_principal, local_principal, total_vagas_desejadas)
             
             return run_id, dataset_id
             

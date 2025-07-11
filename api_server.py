@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 # Adicionar path para os módulos do projeto
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-# Importar serviço APIFY
-from core.services.linkedin_apify_scraper import LinkedInApifyScraper
+# Importar serviço Google Jobs via APIFY
+from core.services.google_jobs_scraper import GoogleJobsScraper
 
 app = Flask(__name__)
 
@@ -119,16 +119,22 @@ def collect_keywords():
                 'message': 'Configure a variável de ambiente APIFY_API_TOKEN no Railway'
             }), 500
         
-        # Instanciar scraper APIFY
-        scraper = LinkedInApifyScraper()
+        # Instanciar scraper Google Jobs
+        scraper = GoogleJobsScraper()
         
         # Executar coleta
-        logger.info("🚀 Iniciando scraping com APIFY...")
-        resultado_scraping = scraper.coletar_vagas(
+        logger.info("🚀 Iniciando scraping com Google Jobs...")
+        vagas = scraper.coletar_vagas_google(
             cargo=cargo,
             localizacao=localizacao,
-            total_vagas=quantidade
+            limite=quantidade
         )
+        
+        # Criar resultado no formato esperado
+        resultado_scraping = {
+            'vagas': vagas,
+            'total_coletadas': len(vagas)
+        }
         
         if not resultado_scraping or not resultado_scraping.get('vagas'):
             logger.error("❌ Nenhuma vaga coletada pelo APIFY")

@@ -1,0 +1,56 @@
+[
+  {
+    "titulo": "Desenvolvedor Python - Vaga 1",
+    "empresa": "Empresa Tech 1",
+    "localizacao": "São Paulo, Brasil",
+    "descricao": "Vaga para Desenvolvedor Python com oportunidades de crescimento...",
+    "fonte": "google_jobs_fallback",
+    "url": "https://careers.google.com/jobs/fallback-1",
+    "data_coleta": "2025-07-11T07:03:35.841087",
+    "data_publicacao": "1 dias atrás",
+    "salario": "R$ 6000,00",
+    "tipo_emprego": "CLT",
+    "nivel_experiencia": "Pleno",
+    "beneficios": [
+      "Vale refeição",
+      "Plano de saúde"
+    ],
+    "cargo_pesquisado": "Desenvolvedor Python"
+  },
+  {
+    "titulo": "Desenvolvedor Python - Vaga 2",
+    "empresa": "Empresa Tech 2",
+    "localizacao": "São Paulo, Brasil",
+    "descricao": "Vaga para Desenvolvedor Python com oportunidades de crescimento...",
+    "fonte": "google_jobs_fallback",
+    "url": "https://careers.google.com/jobs/fallback-2",
+    "data_coleta": "2025-07-11T07:03:35.841132",
+    "data_publicacao": "2 dias atrás",
+    "salario": "R$ 7000,00",
+    "tipo_emprego": "CLT",
+    "nivel_experiencia": "Sênior",
+    "beneficios": [
+      "Vale refeição",
+      "Plano de saúde"
+    ],
+    "cargo_pesquisado": "Desenvolvedor Python"
+  },
+  {
+    "titulo": "Desenvolvedor Python - Vaga 3",
+    "empresa": "Empresa Tech 3",
+    "localizacao": "São Paulo, Brasil",
+    "descricao": "Vaga para Desenvolvedor Python com oportunidades de crescimento...",
+    "fonte": "google_jobs_fallback",
+    "url": "https://careers.google.com/jobs/fallback-3",
+    "data_coleta": "2025-07-11T07:03:35.841142",
+    "data_publicacao": "3 dias atrás",
+    "salario": "R$ 8000,00",
+    "tipo_emprego": "CLT",
+    "nivel_experiencia": "Júnior",
+    "beneficios": [
+      "Vale refeição",
+      "Plano de saúde"
+    ],
+    "cargo_pesquisado": "Desenvolvedor Python"
+  }
+]

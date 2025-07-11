@@ -24,12 +24,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 # Tentar importar os scrapers
 try:
     from core.services.job_scraper import JobScraper
-    from core.services.linkedin_apify_scraper import LinkedInApifyScraper
+    from core.services.google_jobs_scraper import GoogleJobsScraper
     logger.info("✅ Scrapers importados com sucesso")
 except ImportError as e:
     logger.warning(f"⚠️ Erro ao importar scrapers: {e}")
     JobScraper = None
-    LinkedInApifyScraper = None
+    GoogleJobsScraper = None
 
 app = Flask(__name__)
 
@@ -83,7 +83,8 @@ def root():
         'endpoints': [
             '/api/health',
             '/api/agent1/collect-keywords',
-            '/api/agent1/collect-jobs-stream'
+            '/api/agent1/collect-jobs-stream',
+            '/api/agent1/analyze-keywords-stream'
         ]
     })
 
@@ -140,24 +141,24 @@ def collect_keywords():
             }), 500
         
         # Verificar se os scrapers estão disponíveis
-        if JobScraper and LinkedInApifyScraper:
-            # Instanciar scraper APIFY
-            scraper = LinkedInApifyScraper()
+        if JobScraper and GoogleJobsScraper:
+            # Instanciar scraper Google Jobs
+            scraper = GoogleJobsScraper()
             
             # Executar coleta
-            logger.info("🚀 Iniciando scraping com APIFY...")
+            logger.info("🚀 Iniciando scraping com Google Jobs...")
             logger.info(f"Token APIFY presente: {'Sim' if scraper.apify_token else 'Não'}")
-            resultado_scraping = scraper.coletar_vagas_linkedin(
+            resultado_scraping = scraper.coletar_vagas_google(
                 cargo=cargo,
                 localizacao=localizacao,
                 limite=quantidade
             )
             
             if not resultado_scraping:
-                logger.error("❌ Nenhuma vaga coletada pelo APIFY")
+                logger.error("❌ Nenhuma vaga coletada pelo Google Jobs")
                 return jsonify({
                     'error': 'Nenhuma vaga encontrada',
-                    'message': 'O APIFY não retornou vagas para os parâmetros informados'
+                    'message': 'O Google Jobs não retornou vagas para os parâmetros informados'
                 }), 404
             
             # Processar resultado
@@ -167,7 +168,7 @@ def collect_keywords():
             # Montar resposta final
             resultado = {
                 'apify_mode': True,
-                'id': f'apify_{int(time.time())}',
+                'id': f'google_{int(time.time())}',
                 'timestamp': datetime.now().isoformat(),
                 'parametros': {
                     'area_interesse': area,
@@ -182,17 +183,17 @@ def collect_keywords():
                     'tempoColeta': 'N/A'
                 },
                 'transparencia': {
-                    'fontes_utilizadas': ['LinkedIn via APIFY'],
-                    'metodo_coleta': 'APIFY LinkedIn Jobs Scraper',
+                    'fontes_utilizadas': ['Google Jobs via APIFY'],
+                    'metodo_coleta': 'APIFY Google Jobs Scraper',
                     'filtros_aplicados': f'Cargo: {cargo}, Localização: {localizacao}',
-                    'observacoes': 'Dados reais coletados do LinkedIn via APIFY API',
-                    'actor_id': 'curious_coder~linkedin-jobs-scraper',
+                    'observacoes': 'Dados reais coletados do Google Jobs via APIFY API',
+                    'actor_id': 'epctex/google-jobs-scraper',
                     'run_id': 'N/A'
                 },
                 'vagas': vagas_processadas
             }
             
-            logger.info(f"✅ Coleta APIFY finalizada: {total_vagas} vagas")
+            logger.info(f"✅ Coleta Google Jobs finalizada: {total_vagas} vagas")
             return jsonify(resultado)
         
         else:
@@ -270,11 +271,11 @@ def cancel_collection():
             return jsonify({'error': 'run_id não fornecido'}), 400
         
         # Verificar se os scrapers estão disponíveis
-        if LinkedInApifyScraper:
-            linkedin_scraper = LinkedInApifyScraper()
+        if GoogleJobsScraper:
+            google_scraper = GoogleJobsScraper()
             
             # Cancelar o run
-            success = linkedin_scraper.cancelar_run(run_id)
+            success = google_scraper.cancelar_run(run_id)
             
             if success:
                 return jsonify({
@@ -302,7 +303,7 @@ def cancel_collection():
 
 @app.route('/api/agent1/collect-jobs-stream', methods=['POST', 'OPTIONS'])
 def collect_jobs_stream():
-    """Endpoint de streaming de coleta de vagas"""
+    """Endpoint de streaming de coleta de vagas (Google Jobs)"""
     
     if request.method == 'OPTIONS':
         return '', 200
@@ -316,12 +317,12 @@ def collect_jobs_stream():
     area = data.get('area_interesse', 'Tecnologia')
     localizacao = data.get('localizacao', 'São Paulo')
     quantidade = data.get('total_vagas_desejadas', 20)
+    raio_km = data.get('raio_km', 50)
     
     def generate_stream():
         try:
-            
             # Enviar confirmação inicial
-            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta na Catho para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
+            yield f"data: {json.dumps({'status': 'iniciando', 'message': f'Iniciando coleta no Google Jobs para {cargo}...', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             # Verificar token APIFY
             apify_token = os.getenv('APIFY_API_TOKEN')
@@ -331,37 +332,37 @@ def collect_jobs_stream():
             
             yield f"data: {json.dumps({'status': 'config_ok', 'message': 'Configuração verificada', 'timestamp': datetime.now().isoformat()})}\n\n"
             
-            # Verificar se os scrapers estão disponíveis
-            logger.info(f"JobScraper disponível: {JobScraper is not None}")
-            logger.info(f"LinkedInApifyScraper disponível: {LinkedInApifyScraper is not None}")
-            
-            if JobScraper and LinkedInApifyScraper:
-                logger.info("✅ Scrapers disponíveis - Usando Catho (Legal)")
-                job_scraper = JobScraper()
-                linkedin_scraper = LinkedInApifyScraper()  # Agora está usando Catho internamente
-                logger.info(f"Catho scraper token: {'PRESENTE' if linkedin_scraper.apify_token else 'AUSENTE'}")
+            # Verificar se o scraper está disponível
+            if GoogleJobsScraper:
+                logger.info("✅ Google Jobs Scraper disponível")
+                google_scraper = GoogleJobsScraper()
                 
                 # Verificar credenciais
-                if not linkedin_scraper.verificar_credenciais():
-                    yield f"data: {json.dumps({'error': 'Credenciais APIFY inválidas', 'timestamp': datetime.now().isoformat()})}\n\n"
+                if not google_scraper.apify_token:
+                    yield f"data: {json.dumps({'error': 'Token APIFY não configurado', 'timestamp': datetime.now().isoformat()})}\n\n"
                     return
                 
-                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Catho scraper inicializado (Legal)', 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'scrapers_ok', 'message': 'Google Jobs scraper inicializado', 'timestamp': datetime.now().isoformat()})}\n\n"
                 
                 # Iniciar coleta
                 try:
-                    run_id, dataset_id = linkedin_scraper.iniciar_execucao_apify(
-                        cargo=cargo.lower(),
-                        localizacao=localizacao.title(),
-                        limite=quantidade
+                    run_id, dataset_id = google_scraper.iniciar_execucao_google(
+                        cargo=cargo,
+                        localizacao=localizacao,
+                        limite=quantidade,
+                        raio_km=raio_km
                     )
+                    
+                    if not run_id:
+                        yield f"data: {json.dumps({'error': 'Erro ao iniciar coleta no Google Jobs', 'timestamp': datetime.now().isoformat()})}\n\n"
+                        return
                     
                     yield f"data: {json.dumps({'status': 'coleta_iniciada', 'run_id': run_id, 'dataset_id': dataset_id, 'timestamp': datetime.now().isoformat()})}\n\n"
                     
                     # Polling com timeout
                     vagas_coletadas = []
                     tempo_inicio = time.time()
-                    timeout_segundos = 420  # 7 minutos
+                    timeout_segundos = 300  # 5 minutos (Google Jobs é mais rápido)
                     
                     while True:
                         tempo_decorrido = time.time() - tempo_inicio
@@ -371,77 +372,50 @@ def collect_jobs_stream():
                             break
                         
                         # Verificar status
-                        status_run = linkedin_scraper.verificar_status_run(run_id)
+                        status_run = google_scraper.verificar_status_run(run_id)
                         yield f"data: {json.dumps({'status': 'monitorando', 'run_status': status_run, 'timestamp': datetime.now().isoformat()})}\n\n"
                         
-                        # Contar resultados
-                        total_resultados = linkedin_scraper.contar_resultados_dataset(dataset_id)
+                        # Obter resultados parciais
+                        novos_resultados = google_scraper.obter_resultados_parciais(
+                            dataset_id, 
+                            offset=len(vagas_coletadas),
+                            limit=quantidade
+                        )
                         
-                        if total_resultados > len(vagas_coletadas):
-                            # Buscar até 50 novos resultados por vez para não sobrecarregar
-                            limit_parcial = min(50, total_resultados - len(vagas_coletadas))
-                            novos_resultados = linkedin_scraper.obter_resultados_parciais(dataset_id, len(vagas_coletadas), limit_parcial)
-                            
-                            if novos_resultados:
-                                vagas_coletadas.extend(novos_resultados)
-                                yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': novos_resultados, 'total_atual': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
+                        if novos_resultados:
+                            vagas_coletadas.extend(novos_resultados)
+                            yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': novos_resultados, 'total_atual': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                         
                         if status_run in ['SUCCEEDED', 'FAILED', 'ABORTED', 'TIMED-OUT']:
-                            # Buscar TODOS os resultados finais quando terminar
                             if status_run == 'SUCCEEDED':
-                                logger.info(f"✅ Run finalizada com sucesso! Buscando todos os resultados...")
-                                todos_resultados = linkedin_scraper.obter_todos_resultados(dataset_id)
-                                
-                                if todos_resultados and len(todos_resultados) > len(vagas_coletadas):
-                                    logger.info(f"🎯 Encontrados {len(todos_resultados)} resultados totais (coletados: {len(vagas_coletadas)})")
-                                    # Enviar apenas os que faltam
-                                    novos_resultados = todos_resultados[len(vagas_coletadas):]
-                                    if novos_resultados:
-                                        yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': novos_resultados, 'total_atual': len(todos_resultados), 'timestamp': datetime.now().isoformat()})}\n\n"
-                                    vagas_coletadas = todos_resultados
-                                else:
-                                    logger.info(f"📊 Total final: {len(vagas_coletadas)} vagas")
+                                logger.info(f"✅ Run finalizada com sucesso!")
+                                # Pegar resultados finais se houver mais
+                                resultados_finais = google_scraper.obter_resultados_parciais(
+                                    dataset_id,
+                                    offset=len(vagas_coletadas),
+                                    limit=quantidade - len(vagas_coletadas)
+                                )
+                                if resultados_finais:
+                                    vagas_coletadas.extend(resultados_finais)
+                                    yield f"data: {json.dumps({'type': 'novas_vagas', 'novas_vagas': resultados_finais, 'total_atual': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                             break
                         
-                        time.sleep(10)
+                        time.sleep(5)  # Check mais frequente para Google Jobs
                     
                     # Finalizar
                     logger.info(f"🏁 Finalizando streaming com {len(vagas_coletadas)} vagas")
                     yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': len(vagas_coletadas), 'timestamp': datetime.now().isoformat()})}\n\n"
                     
-                    # Garantir que o evento final seja enviado
-                    try:
-                        yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
-                        logger.info("✅ Evento 'finalizado' enviado com sucesso")
-                    except Exception as e:
-                        logger.error(f"❌ Erro ao enviar evento final: {e}")
-                        yield f"data: {json.dumps({'error': 'Erro ao finalizar', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    # Evento final
+                    yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_coletadas, 'timestamp': datetime.now().isoformat()})}\n\n"
                     
                 except Exception as e:
+                    logger.error(f"Erro durante coleta Google Jobs: {e}")
                     yield f"data: {json.dumps({'error': f'Erro durante coleta: {str(e)}', 'timestamp': datetime.now().isoformat()})}\n\n"
             
             else:
                 # Modo demonstração
-                logger.warning("Usando modo demonstração")
-                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Sistema em modo demonstração', 'timestamp': datetime.now().isoformat()})}\n\n"
-                
-                vagas_demo = []
-                for i in range(1, min(quantidade + 1, 11)):
-                    vaga = {
-                        'id': i,
-                        'titulo': f'{cargo} - Posição {i}',
-                        'empresa': f'Empresa Tech {i}',
-                        'localizacao': localizacao,
-                        'descricao': f'Vaga para {cargo} com experiência em tecnologias modernas.',
-                        'link': f'https://linkedin.com/jobs/view/{1000000 + i}'
-                    }
-                    vagas_demo.append(vaga)
-                    
-                    yield f"data: {json.dumps({'type': 'nova_vaga', 'vaga': vaga, 'total_atual': i, 'timestamp': datetime.now().isoformat()})}\n\n"
-                    time.sleep(0.5)
-                
-                yield f"data: {json.dumps({'status': 'concluido', 'total_vagas': len(vagas_demo), 'timestamp': datetime.now().isoformat()})}\n\n"
-                yield f"data: {json.dumps({'status': 'finalizado', 'vagas': vagas_demo, 'timestamp': datetime.now().isoformat()})}\n\n"
+                yield f"data: {json.dumps({'status': 'modo_demo', 'message': 'Google Jobs Scraper não disponível', 'timestamp': datetime.now().isoformat()})}\n\n"
             
         except Exception as e:
             logger.error(f"Erro crítico: {e}")
