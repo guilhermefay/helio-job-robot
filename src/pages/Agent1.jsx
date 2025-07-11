@@ -1179,7 +1179,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
                     </div>
                   </div>
                   <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                    Conectando ao Catho...
+                    Conectando ao Google Jobs...
                   </h4>
                   <p className="text-xs text-gray-600">
                     Aguarde enquanto iniciamos a busca por vagas
@@ -1273,7 +1273,7 @@ const Agent1 = () => {
 
   const stepLabels = [
     'Configurando busca',
-    'Coletando vagas da Catho',
+    'Coletando vagas do Google Jobs',
     'Coletando vagas do Google Jobs',
     'Coletando fontes complementares',
     'Extraindo palavras-chave',
@@ -1306,13 +1306,13 @@ const Agent1 = () => {
       },
       fontes: [
         {
-          nome: 'Catho (Legal)',
+          nome: 'Google Jobs',
           vagas: vagas.length,
           taxa: 100
         }
       ],
       transparencia: {
-        fontes_utilizadas: ['Catho'],
+        fontes_utilizadas: ['Google Jobs'],
         metodo_coleta: 'Streaming em tempo real',
         filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
         observacoes: 'Coleta realizada via streaming'
