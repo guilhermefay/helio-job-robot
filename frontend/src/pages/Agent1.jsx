@@ -117,21 +117,12 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
             <ChartBarIcon className="w-4 h-4 inline mr-1" />
             Quantidade de Vagas
           </label>
-          <select
-            value={config.quantidade}
-            onChange={(e) => handleChange('quantidade', parseInt(e.target.value))}
-            disabled={disabled}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50"
-          >
-            <option value={20}>20 vagas (teste rápido)</option>
-            <option value={50}>50 vagas</option>
-            <option value={100}>100 vagas (limite máximo)</option>
-          </select>
-          {config.quantidade > 100 && (
-            <p className="text-xs text-yellow-600 mt-1">
-              ⚠️ Limite ajustado para 100 vagas para economizar custos
-            </p>
-          )}
+          <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+            <span className="text-gray-700 font-medium">100 vagas</span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Fixado em 100 vagas para melhor análise
+          </p>
         </div>
 
         {/* Tipo de Vaga */}
@@ -166,16 +157,14 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
       <div className="mt-6">
         <button
           type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
+          onClick={() => {}}
+          disabled={true}
+          className="flex items-center text-sm font-medium text-gray-400 cursor-not-allowed"
         >
           <AdjustmentsHorizontalIcon className="w-4 h-4 mr-2" />
           Filtros Avançados
-          {showAdvanced ? (
-            <ChevronUpIcon className="w-4 h-4 ml-1" />
-          ) : (
-            <ChevronDownIcon className="w-4 h-4 ml-1" />
-          )}
+          <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">Em breve</span>
+          <ChevronDownIcon className="w-4 h-4 ml-1" />
         </button>
       </div>
       
