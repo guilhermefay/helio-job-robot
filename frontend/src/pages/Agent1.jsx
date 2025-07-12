@@ -1674,7 +1674,7 @@ const Agent1 = () => {
         body: JSON.stringify({
           vagas: collectionData.vagas,
           cargo_objetivo: searchConfig.cargo.trim(),
-          area_interesse: searchConfig.area.trim()
+          area_interesse: searchConfig.area?.trim() || ''
         }),
         signal: controller.signal
       })
