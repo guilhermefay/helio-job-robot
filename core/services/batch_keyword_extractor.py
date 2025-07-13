@@ -62,6 +62,7 @@ class BatchKeywordExtractor:
         # Processar cada lote
         todos_resultados = []
         palavras_consolidadas = Counter()
+        categorias_consolidadas = {}  # Para rastrear categorias
         
         for idx, lote in enumerate(lotes, 1):
             if callback:
@@ -76,11 +77,15 @@ class BatchKeywordExtractor:
                 if resultado_lote:
                     todos_resultados.append(resultado_lote)
                     
-                    # Consolidar palavras
+                    # Consolidar palavras e categorias
                     for palavra in resultado_lote.get('palavras', []):
                         termo = palavra['termo']
                         freq = palavra.get('frequencia', 1)
                         palavras_consolidadas[termo] += freq
+                        
+                        # Guardar categoria se fornecida
+                        if 'categoria' in palavra:
+                            categorias_consolidadas[termo] = palavra['categoria']
                 
                 # Delay entre lotes para evitar rate limit
                 if idx < len(lotes):
@@ -93,6 +98,7 @@ class BatchKeywordExtractor:
         # Consolidar resultados finais
         resultado_final = self._consolidar_resultados(
             palavras_consolidadas,
+            categorias_consolidadas,
             todos_resultados,
             total_vagas
         )
@@ -112,13 +118,32 @@ class BatchKeywordExtractor:
         # Preparar texto do lote
         texto_lote = self._preparar_texto_lote(lote)
         
-        # Criar prompt simplificado
-        prompt = f"""Analise estas {len(lote)} vagas de {cargo} e extraia palavras-chave técnicas.
+        # Criar prompt completo estilo Carolina Martins
+        prompt = f"""Você é especialista em análise de vagas seguindo a metodologia Carolina Martins.
+Analise estas {len(lote)} vagas de {cargo} e extraia palavras-chave estratégicas.
+
+INSTRUÇÕES IMPORTANTES:
+1. Identifique competências técnicas, ferramentas, frameworks, metodologias e soft skills
+2. Conte quantas vezes cada termo aparece nas vagas
+3. Ignore palavras genéricas (dinâmico, proativo, inovador)
+4. Foque em termos ESPECÍFICOS e MENSURÁVEIS
+5. Preserve termos em inglês quando forem padrão do mercado
+
+CATEGORIAS:
+- Técnicas: linguagens, frameworks, metodologias técnicas
+- Ferramentas: softwares, plataformas, IDEs
+- Comportamentais: soft skills específicas (não adjetivos genéricos)
 
 {texto_lote}
 
-Retorne APENAS JSON com palavras-chave e suas frequências:
-{{"palavras": [{{"termo": "React", "frequencia": 3}}, {{"termo": "JavaScript", "frequencia": 2}}]}}"""
+RETORNE APENAS JSON com as palavras-chave mais relevantes:
+{{
+  "palavras": [
+    {{"termo": "React", "frequencia": 3, "categoria": "framework"}},
+    {{"termo": "JavaScript", "frequencia": 3, "categoria": "linguagem"}},
+    {{"termo": "Git", "frequencia": 2, "categoria": "ferramenta"}}
+  ]
+}}"""
         
         try:
             response = self.model.generate_content(
@@ -145,19 +170,32 @@ Retorne APENAS JSON com palavras-chave e suas frequências:
             return None
     
     def _preparar_texto_lote(self, lote: List[Dict]) -> str:
-        """Prepara texto resumido do lote"""
+        """Prepara texto estruturado do lote"""
         textos = []
         
         for i, vaga in enumerate(lote, 1):
-            titulo = vaga.get('titulo', '')
-            desc = vaga.get('descricao', '')[:200]  # Limitar descrição
-            textos.append(f"Vaga {i}: {titulo}. {desc}...")
+            titulo = vaga.get('titulo', 'Sem título')
+            empresa = vaga.get('empresa', 'Empresa não informada')
+            desc = vaga.get('descricao', '')
+            
+            # Limitar descrição mas manter mais conteúdo
+            if len(desc) > 400:
+                desc = desc[:400] + "..."
+            
+            texto_vaga = f"""
+--- VAGA {i} ---
+Título: {titulo}
+Empresa: {empresa}
+Descrição: {desc}
+"""
+            textos.append(texto_vaga)
         
         return "\n".join(textos)
     
     def _consolidar_resultados(
         self, 
         palavras_consolidadas: Counter,
+        categorias_consolidadas: Dict[str, str],
         todos_resultados: List[Dict],
         total_vagas: int
     ) -> Dict:
@@ -170,7 +208,7 @@ Retorne APENAS JSON com palavras-chave e suas frequências:
                 "termo": termo,
                 "frequencia": freq,
                 "percentual": round((freq / total_vagas) * 100, 1),
-                "categoria": self._categorizar_termo(termo)
+                "categoria": categorias_consolidadas.get(termo, self._categorizar_termo(termo))
             })
         
         # Categorizar todas as palavras
