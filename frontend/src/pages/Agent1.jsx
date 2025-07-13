@@ -1124,6 +1124,13 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
     console.log('🔴 BOTÃO CANCELAR CLICADO!')
     console.log('📊 runId atual:', runId)
     console.log('📊 abortController:', abortController)
+    console.log(`📊 Vagas coletadas até agora: ${vagasColetadas.length}`)
+    
+    // Se já coletou algumas vagas, salvar antes de fechar
+    if (vagasColetadas.length > 0) {
+      console.log(`💾 Salvando ${vagasColetadas.length} vagas coletadas antes de interromper...`)
+      onJobsCollected(vagasColetadas)
+    }
     
     if (!runId) {
       console.log('⚠️ Sem run_id, apenas abortando fetch')
@@ -1131,7 +1138,6 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
       if (abortController) {
         abortController.abort()
       }
-      onClose()
       return
     }
     
@@ -1167,7 +1173,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
     }
     
     setIsCancelling(false)
-    onClose()
+    // Não chamar onClose() aqui pois já salvamos as vagas em onJobsCollected
   }
   
   React.useEffect(() => {
