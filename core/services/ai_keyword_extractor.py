@@ -171,7 +171,7 @@ class AIKeywordExtractor:
         resultado_final = self._processar_resultado_ia(resultado, modelo_usado)
         
         print(f"\n✅ Análise concluída com {modelo_usado}")
-        print(f"🔝 Top 10 palavras: {len(resultado_final.get('top_10_carolina_martins', []))}")
+        print(f"🔝 Top 10 palavras: {len(resultado_final.get('top_10_palavras_chave', []))}")
         print(f"📊 Total palavras categorizadas: {resultado_final.get('total_palavras_unicas', 0)}")
         
         return resultado_final
@@ -207,11 +207,11 @@ Descrição:
     ) -> str:
         """Cria prompt sofisticado para extração via IA"""
         
-        prompt = f"""Você é o Agente de Palavras-chave do método Carreira Meteórica da Carolina Martins. 
+        prompt = f"""Você é um especialista em análise de vagas de emprego. 
 Sua tarefa é analisar {total_vagas} descrições de vagas para o cargo de "{cargo_objetivo}" 
-na área de "{area_interesse}" e gerar um Mapa de Palavras-Chave (MPC) completo e estruturado.
+na área de "{area_interesse}" e identificar as palavras-chave mais relevantes.
 
-METODOLOGIA CAROLINA MARTINS A SEGUIR:
+METODOLOGIA A SEGUIR:
 
 1. EXTRAÇÃO: 
    - Identifique TODAS as competências técnicas, ferramentas, metodologias, soft skills e qualificações
@@ -233,7 +233,7 @@ METODOLOGIA CAROLINA MARTINS A SEGUIR:
    - IMPORTANTE: presente em 30-60% das vagas
    - COMPLEMENTAR: presente em <30% das vagas
 
-5. TOP 10 CAROLINA MARTINS:
+5. TOP 10 PALAVRAS-CHAVE:
    - Liste as 10 palavras-chave mais estratégicas combinando frequência e relevância para o cargo
 
 REGRAS CRÍTICAS - LEIA COM ATENÇÃO:
@@ -271,7 +271,7 @@ FORMATO JSON OBRIGATÓRIO:
     "data_analise": "{datetime.now().strftime('%Y-%m-%d')}",
     "total_palavras_unicas": 0
   }},
-  "top_10_carolina_martins": [
+  "top_10_palavras_chave": [
     {{"termo": "exemplo", "frequencia_absoluta": 85, "frequencia_percentual": 85.0, "categoria": "tecnica"}},
     ...
   ],
@@ -299,18 +299,15 @@ FORMATO JSON OBRIGATÓRIO:
     def _chamar_claude(self, prompt: str) -> Dict[str, Any]:
         """Chama API do Claude para análise"""
         try:
-            response = self.anthropic_client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=4000,
+            response = self.anthropic_client.completion(
+                model="claude-instant-1",
+                max_tokens_to_sample=4000,
                 temperature=0.3,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                prompt=f"\n\nHuman: {prompt}\n\nAssistant:"
             )
             
             # Extrair JSON da resposta
-            texto_resposta = response.content[0].text
+            texto_resposta = response.completion
             
             # Tentar encontrar JSON na resposta
             inicio = texto_resposta.find('{')
@@ -350,18 +347,45 @@ FORMATO JSON OBRIGATÓRIO:
     def _chamar_gemini(self, prompt: str) -> Dict[str, Any]:
         """Chama API do Gemini 2.5 Flash para análise"""
         try:
+            # Configurações de segurança menos restritivas
+            safety_settings = [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH", 
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                }
+            ]
+            
             # Configuração otimizada para Gemini Pro
             response = self.gemini_model.generate_content(
                 prompt,
                 generation_config={
                     "temperature": 0.3,
                     "max_output_tokens": 4000,  # Limite seguro
-                    # Removido response_mime_type que pode causar problemas
-                }
+                    "candidate_count": 1,
+                    "top_k": 40,
+                    "top_p": 0.95
+                },
+                safety_settings=safety_settings
             )
             
-            # Com response_mime_type, o Gemini 2.5 Flash já retorna JSON estruturado
-            texto_resposta = response.text
+            # Verificar se houve resposta válida
+            if not response.candidates or not response.candidates[0].content.parts:
+                raise ValueError("Resposta vazia do Gemini")
+            
+            # Obter texto da resposta
+            texto_resposta = response.candidates[0].content.parts[0].text
             
             # Debug: imprimir primeiros caracteres da resposta
             print(f"DEBUG: Resposta Gemini (primeiros 200 chars): {texto_resposta[:200]}")
@@ -430,7 +454,7 @@ FORMATO JSON OBRIGATÓRIO:
         resultado['analise_metadados']['total_palavras_unicas'] = len(todas_palavras)
         
         # Validar top 10
-        if 'top_10_carolina_martins' not in resultado:
-            resultado['top_10_carolina_martins'] = []
+        if 'top_10_palavras_chave' not in resultado:
+            resultado['top_10_palavras_chave'] = []
         
         return resultado
