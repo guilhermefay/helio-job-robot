@@ -83,12 +83,16 @@ class AIKeywordExtractor:
         if callback_progresso:
             await callback_progresso("Preparando descrições para análise IA...")
         
+        # Limitar número de vagas para evitar prompt muito grande
+        vagas_limitadas = vagas[:20] if len(vagas) > 20 else vagas
+        
         # Preparar texto agregado
-        texto_agregado = self._preparar_texto_vagas(vagas)
-        total_vagas = len(vagas)
+        texto_agregado = self._preparar_texto_vagas(vagas_limitadas)
+        total_vagas = len(vagas_limitadas)
+        total_vagas_original = len(vagas)
         
         print(f"\n🤖 === EXTRAÇÃO VIA IA ===")
-        print(f"📊 Total de vagas: {total_vagas}")
+        print(f"📊 Total de vagas: {total_vagas} (de {total_vagas_original} originais)")
         print(f"📝 Tamanho do texto: {len(texto_agregado)} caracteres")
         print(f"🎯 Cargo: {cargo_objetivo}")
         print(f"🏢 Área: {area_interesse}")
@@ -185,6 +189,10 @@ class AIKeywordExtractor:
             empresa = vaga.get('empresa', 'Empresa não informada')
             descricao = vaga.get('descricao', '')
             
+            # Limitar tamanho da descrição para economizar tokens
+            if len(descricao) > 300:
+                descricao = descricao[:300] + "..."
+            
             # Formato estruturado para melhor compreensão da IA
             texto_vaga = f"""
 --- VAGA {i} ---
@@ -207,92 +215,36 @@ Descrição:
     ) -> str:
         """Cria prompt sofisticado para extração via IA"""
         
-        prompt = f"""Você é um especialista em análise de vagas de emprego. 
-Sua tarefa é analisar {total_vagas} descrições de vagas para o cargo de "{cargo_objetivo}" 
-na área de "{area_interesse}" e identificar as palavras-chave mais relevantes.
+        prompt = f"""Analise {total_vagas} vagas de {cargo_objetivo} e extraia as 10 palavras-chave técnicas mais importantes.
 
-METODOLOGIA A SEGUIR:
+INSTRUÇÕES:
+1. Identifique tecnologias, linguagens, frameworks, ferramentas e metodologias
+2. Conte quantas vezes cada termo aparece nas vagas
+3. Categorize em: técnica, ferramenta ou comportamental
+4. Ignore palavras genéricas (dinâmico, proativo, etc)
 
-1. EXTRAÇÃO: 
-   - Identifique TODAS as competências técnicas, ferramentas, metodologias, soft skills e qualificações
-   - Capture termos compostos (ex: "machine learning", "gestão de projetos") como unidades únicas
-   - IGNORE termos genéricos como "dinâmico", "proativo", "inovador", "estratégico" quando isolados
-   - FOQUE em competências ESPECÍFICAS e MENSURÁVEIS
+FORMATO ESPERADO:
 
-2. CONTAGEM DE FREQUÊNCIA:
-   - Calcule em quantas das {total_vagas} vagas cada termo aparece
-   - Considere variações do mesmo termo (SQL/MySQL, React/React.js) como ocorrências do termo principal
+{{
+  "top_10_palavras_chave": [
+    {{"termo": "React", "frequencia": 5, "categoria": "framework"}},
+    {{"termo": "JavaScript", "frequencia": 5, "categoria": "linguagem"}},
+    {{"termo": "TypeScript", "frequencia": 3, "categoria": "linguagem"}},
+    {{"termo": "Git", "frequencia": 4, "categoria": "ferramenta"}},
+    {{"termo": "CSS", "frequencia": 4, "categoria": "linguagem"}},
+    {{"termo": "HTML", "frequencia": 4, "categoria": "linguagem"}},
+    {{"termo": "API REST", "frequencia": 3, "categoria": "tecnica"}},
+    {{"termo": "Node.js", "frequencia": 2, "categoria": "framework"}},
+    {{"termo": "Jest", "frequencia": 2, "categoria": "ferramenta"}},
+    {{"termo": "Agile", "frequencia": 3, "categoria": "metodologia"}}
+  ],
+  "total_palavras_unicas": 35
+}}
 
-3. CATEGORIZAÇÃO em três grupos:
-   - TÉCNICAS: Conhecimentos específicos da área, linguagens de programação, frameworks, metodologias
-   - FERRAMENTAS: Softwares, plataformas, ferramentas de produtividade (Excel, SAP, Photoshop)
-   - COMPORTAMENTAIS: Soft skills REAIS e específicas (não adjetivos genéricos)
-
-4. PRIORIZAÇÃO por frequência:
-   - ESSENCIAL: presente em >60% das vagas
-   - IMPORTANTE: presente em 30-60% das vagas
-   - COMPLEMENTAR: presente em <30% das vagas
-
-5. TOP 10 PALAVRAS-CHAVE:
-   - Liste as 10 palavras-chave mais estratégicas combinando frequência e relevância para o cargo
-
-REGRAS CRÍTICAS - LEIA COM ATENÇÃO:
-
-❌ PALAVRAS PROIBIDAS (NUNCA incluir no resultado):
-- Stop words: você, nosso, nossa, para, com, sem, sobre, após, mais, menos, muito
-- Genéricos sem contexto: desenvolvimento, experiência, conhecimento, habilidade, oportunidade
-- Adjetivos vazios: bom, ótimo, excelente, dinâmico, proativo, inovador, estratégico
-- Palavras de contexto: empresa, cliente, equipe, vaga, candidato, profissional, mercado
-- Verbos comuns: fazer, ter, ser, estar, poder, dever, buscar, atuar
-
-✅ EXEMPLOS DE BOAS PALAVRAS-CHAVE:
-- Técnicas: React.js, Python, Node.js, AWS, Docker, Kubernetes, SQL, MongoDB, API REST
-- Ferramentas: Jira, Figma, Tableau, Power BI, Git, Postman, VS Code, Slack
-- Comportamentais: gestão de conflitos, mentoria de equipes, apresentação executiva
-- Termos compostos: machine learning, cloud computing, metodologia ágil, design thinking
-
-⚠️ IMPORTANTE:
-- Mínimo 30 palavras únicas relevantes
-- Cada palavra do TOP 10 deve ser ÚTIL para otimizar um currículo
-- Preserve termos em inglês quando forem padrão do mercado (não traduza)
-- Mantenha o case original (React, não react; AWS, não aws)
-
-TEXTO DAS VAGAS:
+VAGAS PARA ANALISAR:
 {texto_vagas}
 
-RETORNE APENAS JSON VÁLIDO, SEM TEXTO ADICIONAL!
-
-FORMATO JSON OBRIGATÓRIO:
-{{
-  "analise_metadados": {{
-    "cargo_analisado": "{cargo_objetivo}",
-    "area_analisada": "{area_interesse}",
-    "total_vagas": {total_vagas},
-    "data_analise": "{datetime.now().strftime('%Y-%m-%d')}",
-    "total_palavras_unicas": 0
-  }},
-  "top_10_palavras_chave": [
-    {{"termo": "exemplo", "frequencia_absoluta": 85, "frequencia_percentual": 85.0, "categoria": "tecnica"}},
-    ...
-  ],
-  "mpc_completo": {{
-    "essenciais": [
-      {{"termo": "...", "categoria": "tecnica|ferramentas|comportamental", "frequencia_absoluta": 65, "frequencia_percentual": 65.0}},
-      ...
-    ],
-    "importantes": [
-      ...
-    ],
-    "complementares": [
-      ...
-    ]
-  }},
-  "insights_adicionais": {{
-    "tendencias_emergentes": ["lista de tecnologias/skills em crescimento"],
-    "gaps_identificados": ["competências pouco mencionadas mas potencialmente importantes"],
-    "recomendacoes": ["sugestões específicas para o candidato"]
-  }}
-}}"""
+RETORNE APENAS O JSON, SEM TEXTO ADICIONAL OU MARKDOWN!"""
         
         return prompt
     
@@ -381,8 +333,13 @@ FORMATO JSON OBRIGATÓRIO:
             )
             
             # Verificar se houve resposta válida
-            if not response.candidates or not response.candidates[0].content.parts:
-                raise ValueError("Resposta vazia do Gemini")
+            if not response.candidates:
+                raise ValueError("Sem candidatos na resposta do Gemini")
+            
+            if not response.candidates[0].content.parts:
+                print(f"DEBUG: Finish reason: {response.candidates[0].finish_reason}")
+                print(f"DEBUG: Safety ratings: {response.candidates[0].safety_ratings}")
+                raise ValueError("Resposta vazia do Gemini (sem parts)")
             
             # Obter texto da resposta
             texto_resposta = response.candidates[0].content.parts[0].text
