@@ -83,10 +83,27 @@ class AIKeywordExtractor:
         if callback_progresso:
             await callback_progresso("Preparando descrições para análise IA...")
         
-        # Limitar número de vagas para evitar prompt muito grande
-        vagas_limitadas = vagas[:20] if len(vagas) > 20 else vagas
+        # Se temos muitas vagas, usar processamento em lotes
+        if len(vagas) > 20:
+            print(f"🔄 Usando processamento em lotes para {len(vagas)} vagas...")
+            
+            # Importar e usar o extrator em lotes
+            from .batch_keyword_extractor import BatchKeywordExtractor
+            batch_extractor = BatchKeywordExtractor()
+            
+            # Processar em lotes
+            resultado_batch = await batch_extractor.extract_keywords_batch(
+                vagas=vagas,
+                cargo=cargo_objetivo,
+                batch_size=10,
+                callback=callback_progresso
+            )
+            
+            # Converter formato do resultado
+            return self._converter_resultado_batch(resultado_batch)
         
-        # Preparar texto agregado
+        # Para poucas vagas, usar método original
+        vagas_limitadas = vagas
         texto_agregado = self._preparar_texto_vagas(vagas_limitadas)
         total_vagas = len(vagas_limitadas)
         total_vagas_original = len(vagas)
@@ -415,3 +432,22 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL OU MARKDOWN!"""
             resultado['top_10_palavras_chave'] = []
         
         return resultado
+    
+    def _converter_resultado_batch(self, resultado_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """Converte resultado do processamento em lotes para o formato esperado"""
+        
+        # Criar estrutura no formato esperado
+        resultado_convertido = {
+            "analise_metadados": {
+                "total_vagas": resultado_batch.get('total_vagas_analisadas', 0),
+                "data_analise": resultado_batch.get('timestamp', datetime.now().isoformat()),
+                "total_palavras_unicas": resultado_batch.get('total_palavras_unicas', 0),
+                "modelo_ia_usado": resultado_batch.get('modelo_usado', 'batch-processor')
+            },
+            "top_10_palavras_chave": resultado_batch.get('top_10_palavras_chave', []),
+            "categorias": resultado_batch.get('categorias', {}),
+            "modelo_usado": resultado_batch.get('modelo_usado', 'batch-processor'),
+            "total_palavras_unicas": resultado_batch.get('total_palavras_unicas', 0)
+        }
+        
+        return resultado_convertido
