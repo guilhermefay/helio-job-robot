@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "data_analise": "2025-07-13T09:47:35.306799",
+    "total_vagas": 100,
+    "tempo_processamento": "61.8s"
+  },
+  "resultado": {
+    "analise_metadados": {
+      "total_vagas": 100,
+      "data_analise": "2025-07-13T09:47:35.303027",
+      "total_palavras_unicas": 37,
+      "modelo_ia_usado": "gemini-2.0-flash-exp-batch"
+    },
+    "top_10_palavras_chave": [
+      {
+        "termo": "React.js",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "framework"
+      },
+      {
+        "termo": "Hooks",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "técnica"
+      },
+      {
+        "termo": "Context API",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "técnica"
+      },
+      {
+        "termo": "JavaScript ES6+",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "linguagem"
+      },
+      {
+        "termo": "TypeScript",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "linguagem"
+      },
+      {
+        "termo": "HTML5",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "linguagem"
+      },
+      {
+        "termo": "CSS3",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "linguagem"
+      },
+      {
+        "termo": "Responsive Design",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "técnica"
+      },
+      {
+        "termo": "Git",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "ferramenta"
+      },
+      {
+        "termo": "Inglês técnico",
+        "frequencia": 60,
+        "percentual": 60.0,
+        "categoria": "comportamental"
+      }
+    ],
+    "categorias": {
+      "linguagens": [
+        {
+          "termo": "JavaScript ES6+",
+          "frequencia": 60
+        },
+        {
+          "termo": "TypeScript",
+          "frequencia": 60
+        },
+        {
+          "termo": "HTML5",
+          "frequencia": 60
+        },
+        {
+          "termo": "CSS3",
+          "frequencia": 60
+        },
+        {
+          "termo": "Google Cloud Platform",
+          "frequencia": 11
+        }
+      ],
+      "frameworks": [
+        {
+          "termo": "React.js",
+          "frequencia": 60
+        },
+        {
+          "termo": "Express",
+          "frequencia": 32
+        },
+        {
+          "termo": "React Testing Library",
+          "frequencia": 13
+        },
+        {
+          "termo": "React Native",
+          "frequencia": 13
+        },
+        {
+          "termo": "Next.js",
+          "frequencia": 7
+        }
+      ],
+      "ferramentas": [
+        {
+          "termo": "Git",
+          "frequencia": 60
+        },
+        {
+          "termo": "Docker",
+          "frequencia": 12
+        },
+        {
+          "termo": "AWS",
+          "frequencia": 11
+        },
+        {
+          "termo": "Jenkins",
+          "frequencia": 7
+        },
+        {
+          "termo": "GitHub Actions",
+          "frequencia": 7
+        }
+      ],
+      "metodologias": [
+        {
+          "termo": "Context API",
+          "frequencia": 60
+        },
+        {
+          "termo": "APIs REST",
+          "frequencia": 50
+        },
+        {
+          "termo": "REST APIs",
+          "frequencia": 10
+        },
+        {
+          "termo": "CI/CD",
+          "frequencia": 7
+        },
+        {
+          "termo": "Scrum/Kanban",
+          "frequencia": 7
+        },
+        {
+          "termo": "Scrum",
+          "frequencia": 2
+        },
+        {
+          "termo": "Kanban",
+          "frequencia": 2
+        }
+      ],
+      "outros": [
+        {
+          "termo": "Hooks",
+          "frequencia": 60
+        },
+        {
+          "termo": "Responsive Design",
+          "frequencia": 60
+        },
+        {
+          "termo": "Inglês técnico",
+          "frequencia": 60
+        },
+        {
+          "termo": "Node.js",
+          "frequencia": 32
+        },
+        {
+          "termo": "Redux",
+          "frequencia": 21
+        },
+        {
+          "termo": "MobX",
+          "frequencia": 21
+        },
+        {
+          "termo": "Jest",
+          "frequencia": 13
+        },
+        {
+          "termo": "Gatsby",
+          "frequencia": 7
+        },
+        {
+          "termo": "GraphQL",
+          "frequencia": 7
+        },
+        {
+          "termo": "Apollo",
+          "frequencia": 7
+        },
+        {
+          "termo": "Testes unitários",
+          "frequencia": 7
+        },
+        {
+          "termo": "containerização",
+          "frequencia": 3
+        },
+        {
+          "termo": "Metodologias ágeis",
+          "frequencia": 2
+        },
+        {
+          "termo": "Styled Components",
+          "frequencia": 1
+        },
+        {
+          "termo": "Emotion",
+          "frequencia": 1
+        }
+      ]
+    },
+    "modelo_usado": "gemini-2.0-flash-exp-batch",
+    "total_palavras_unicas": 37
+  }
+}

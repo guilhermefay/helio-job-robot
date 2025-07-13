@@ -856,7 +856,7 @@ def analyze_keywords_stream():
 
 # Print environment info at module level
 logger.info("=" * 50)
-logger.info("🚀 HELIO JOB ROBOT - INICIALIZANDO")
+logger.info("🚀 HELIO JOB ROBOT - INICIALIZANDO v2")
 logger.info(f"📍 Ambiente: {'Railway' if os.environ.get('RAILWAY_ENVIRONMENT') else 'Local'}")
 logger.info(f"🔑 PORT: {os.environ.get('PORT', 'Não definido')}")
 logger.info(f"🔑 APIFY_API_TOKEN: {'Configurado' if os.environ.get('APIFY_API_TOKEN') else 'Não configurado'}")
