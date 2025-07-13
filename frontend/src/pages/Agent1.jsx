@@ -157,14 +157,16 @@ const SearchConfiguration = ({ config, onChange, disabled }) => {
       <div className="mt-6">
         <button
           type="button"
-          onClick={() => {}}
-          disabled={true}
-          className="flex items-center text-sm font-medium text-gray-400 cursor-not-allowed"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900"
         >
           <AdjustmentsHorizontalIcon className="w-4 h-4 mr-2" />
           Filtros Avançados
-          <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">Em breve</span>
-          <ChevronDownIcon className="w-4 h-4 ml-1" />
+          {showAdvanced ? (
+            <ChevronUpIcon className="w-4 h-4 ml-1" />
+          ) : (
+            <ChevronDownIcon className="w-4 h-4 ml-1" />
+          )}
         </button>
       </div>
       
