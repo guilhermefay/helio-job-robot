@@ -1675,8 +1675,8 @@ const Agent1 = () => {
         },
         body: JSON.stringify({
           vagas: collectionData.vagas,
-          cargo_objetivo: searchConfig.cargo.trim(),
-          area_interesse: searchConfig.cargo?.trim() || ''
+          cargo_objetivo: searchConfig?.cargo?.trim() || '',
+          area_interesse: searchConfig?.cargo?.trim() || ''
         }),
         signal: controller.signal
       })
