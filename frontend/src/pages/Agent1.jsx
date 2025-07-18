@@ -1188,11 +1188,11 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
       
       try {
         const requestData = {
-          area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
-          cargo_objetivo: searchConfig.cargo.trim(),
-          localizacao: searchConfig.localizacao.trim(),
+          area_interesse: searchConfig?.cargo?.trim() || '', // Usar cargo como área também
+          cargo_objetivo: searchConfig?.cargo?.trim() || '',
+          localizacao: searchConfig?.localizacao?.trim() || '',
           total_vagas_desejadas: searchConfig.quantidade,
-          segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+          segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig?.segmentos?.trim().split(',').map(s => s.trim()) : [],
           tipo_vaga: searchConfig.tipoVaga || 'todos',
           // Parâmetros avançados
           raio: searchConfig.raio || '25',
@@ -1444,9 +1444,9 @@ const Agent1 = () => {
       id: `stream_${Date.now()}`,
       timestamp: new Date().toISOString(),
       parametros: {
-        area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
-        cargo_objetivo: searchConfig.cargo.trim(),
-        localizacao: searchConfig.localizacao.trim(),
+        area_interesse: searchConfig?.cargo?.trim() || '', // Usar cargo como área também
+        cargo_objetivo: searchConfig?.cargo?.trim() || '',
+        localizacao: searchConfig?.localizacao?.trim() || '',
         total_vagas_desejadas: searchConfig.quantidade
       },
       estatisticas: {
@@ -1466,7 +1466,7 @@ const Agent1 = () => {
       transparencia: {
         fontes_utilizadas: ['Indeed'],
         metodo_coleta: 'Streaming em tempo real',
-        filtros_aplicados: `Cargo: ${searchConfig.cargo.trim()}, Localização: ${searchConfig.localizacao.trim()}`,
+        filtros_aplicados: `Cargo: ${searchConfig?.cargo?.trim() || ''}, Localização: ${searchConfig?.localizacao?.trim() || ''}`,
         observacoes: 'Coleta realizada via streaming'
       },
       vagas: vagas
@@ -1490,10 +1490,10 @@ const Agent1 = () => {
     console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS - v1.0.1')
     console.log('📋 Validando campos obrigatórios...')
     
-    if (!searchConfig.cargo.trim() || !searchConfig.localizacao.trim()) {
+    if (!searchConfig?.cargo?.trim() || !searchConfig?.localizacao?.trim()) {
       console.error('❌ ERRO: Campos obrigatórios não preenchidos')
-      console.log('Cargo:', searchConfig.cargo.trim()) 
-      console.log('Localização:', searchConfig.localizacao.trim())
+      console.log('Cargo:', searchConfig?.cargo?.trim() || '') 
+      console.log('Localização:', searchConfig?.localizacao?.trim() || '')
       setError('Por favor, preencha todos os campos obrigatórios.')
       return
     }
@@ -1510,11 +1510,11 @@ const Agent1 = () => {
     setCurrentStep(1)
     try {
       const requestData = {
-        area_interesse: searchConfig.cargo.trim(), // Usar cargo como área também
-        cargo_objetivo: searchConfig.cargo.trim(),
-        localizacao: searchConfig.localizacao.trim(),
+        area_interesse: searchConfig?.cargo?.trim() || '', // Usar cargo como área também
+        cargo_objetivo: searchConfig?.cargo?.trim() || '',
+        localizacao: searchConfig?.localizacao?.trim() || '',
         total_vagas_desejadas: searchConfig.quantidade,
-        segmentos_alvo: searchConfig.segmentos.trim() ? searchConfig.segmentos.trim().split(',').map(s => s.trim()) : [],
+        segmentos_alvo: searchConfig?.segmentos?.trim() ? searchConfig?.segmentos?.trim().split(',').map(s => s.trim()) : [],
         tipo_vaga: searchConfig.tipoVaga // Usar tipo de vaga selecionado
       }
 
@@ -1767,8 +1767,8 @@ const Agent1 = () => {
   }
 
   const canStartCollection = (
-    searchConfig.cargo.trim() && 
-    searchConfig.localizacao.trim() && 
+    searchConfig?.cargo?.trim() && 
+    searchConfig?.localizacao?.trim() && 
     !isProcessing
   )
 
