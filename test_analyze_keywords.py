@@ -1,124 +1,106 @@
 #!/usr/bin/env python3
 """
-Script para testar a funcionalidade de análise de palavras-chave
+Script para testar o endpoint de análise de palavras-chave do Agent1
 """
-import asyncio
+
+import requests
 import json
-from core.services.ai_keyword_extractor import AIKeywordExtractor
+import time
 
-# Dados de teste - simulando vagas coletadas
-vagas_teste = [
-    {
-        "titulo": "Desenvolvedor Frontend React",
-        "empresa": "Tech Solutions",
-        "descricao": """
-        Procuramos desenvolvedor frontend com experiência em React.
-        
-        Requisitos:
-        - Experiência sólida com React e JavaScript ES6+
-        - Conhecimento em HTML5, CSS3 e responsividade
-        - Experiência com Git e metodologias ágeis
-        - TypeScript é um diferencial
-        
-        Oferecemos:
-        - Salário competitivo
-        - Home office flexível
-        - Benefícios completos
-        """
-    },
-    {
-        "titulo": "Desenvolvedor Front-end Sênior",
-        "empresa": "Digital Agency",
-        "descricao": """
-        Vaga para desenvolvedor front-end sênior.
-        
-        Requisitos obrigatórios:
-        - React.js avançado
-        - JavaScript/TypeScript
-        - CSS/SASS
-        - Testes unitários (Jest)
-        - Inglês técnico
-        
-        Diferenciais:
-        - Next.js
-        - Node.js
-        - AWS
-        """
-    },
-    {
-        "titulo": "Frontend Developer",
-        "empresa": "Startup Inovadora",
-        "descricao": """
-        Buscamos frontend developer para nosso time.
-        
-        O que esperamos:
-        - Domínio de React e seu ecossistema
-        - JavaScript moderno
-        - Styled Components ou CSS-in-JS
-        - Versionamento com Git
-        - Comunicação efetiva
-        
-        Plus:
-        - Vue.js ou Angular
-        - GraphQL
-        - Docker
-        """
-    }
-]
+# Configuração
+BASE_URL = "http://localhost:5001"
+ENDPOINT = f"{BASE_URL}/api/agent1/analyze-keywords-stream"
 
-async def testar_analise():
-    """Testa a análise de palavras-chave"""
-    print("🧪 Iniciando teste de análise de palavras-chave...")
-    print(f"📊 Total de vagas de teste: {len(vagas_teste)}")
-    
-    # Criar extrator
-    extractor = AIKeywordExtractor()
-    
-    # Parâmetros de busca
-    cargo_objetivo = "desenvolvedor front end"
-    area_interesse = "tecnologia"
-    
-    print(f"\n🎯 Cargo objetivo: {cargo_objetivo}")
-    print(f"🏢 Área de interesse: {area_interesse}")
+# Dados de teste - vamos usar uma vaga de exemplo
+test_data = {
+    "vagas": [
+        {
+            "titulo": "Desenvolvedor Python Senior",
+            "empresa": "Tech Company",
+            "descricao": """
+            Buscamos desenvolvedor Python com experiência em Django, Flask e FastAPI.
+            Conhecimentos em Docker, Kubernetes e AWS são diferenciais.
+            Experiência com bancos de dados PostgreSQL e MongoDB.
+            Inglês fluente é obrigatório.
+            """,
+            "localizacao": "São Paulo, SP",
+            "link": "https://example.com/vaga1"
+        },
+        {
+            "titulo": "Engenheiro de Dados",
+            "empresa": "Data Corp",
+            "descricao": """
+            Procuramos engenheiro de dados com experiência em Python, Spark e Airflow.
+            Conhecimentos em AWS, especialmente S3, EMR e Glue.
+            Experiência com SQL e modelagem de dados.
+            Conhecimento em machine learning é um diferencial.
+            """,
+            "localizacao": "Rio de Janeiro, RJ",
+            "link": "https://example.com/vaga2"
+        }
+    ],
+    "cargo_objetivo": "Desenvolvedor Python",
+    "area_interesse": "Engenharia de Software"
+}
+
+def test_analyze_keywords():
+    print("🔍 Testando endpoint de análise de palavras-chave...")
+    print(f"URL: {ENDPOINT}")
+    print(f"Número de vagas: {len(test_data['vagas'])}")
+    print("-" * 50)
     
     try:
-        # Executar análise
-        print("\n🤖 Iniciando análise com IA...")
-        resultado = await extractor.extrair_palavras_chave_ia(
-            vagas=vagas_teste,
-            cargo_objetivo=cargo_objetivo,
-            area_interesse=area_interesse
+        # Fazer a requisição
+        response = requests.post(
+            ENDPOINT,
+            json=test_data,
+            headers={'Content-Type': 'application/json'},
+            stream=True
         )
         
-        # Mostrar resultados
-        print("\n✅ ANÁLISE CONCLUÍDA!")
-        print("\n📋 TOP 10 PALAVRAS-CHAVE (Carolina Martins):")
-        for i, palavra in enumerate(resultado.get('top_10_carolina_martins', []), 1):
-            print(f"   {i}. {palavra['termo']} ({palavra['frequencia']} menções)")
-            if palavra.get('justificativa'):
-                print(f"      → {palavra['justificativa']}")
+        if response.status_code != 200:
+            print(f"❌ Erro HTTP: {response.status_code}")
+            print(f"Resposta: {response.text}")
+            return
         
-        print("\n📊 CATEGORIZAÇÃO:")
-        categorias = resultado.get('categorias', {})
-        for categoria, termos in categorias.items():
-            if termos:
-                print(f"\n🏷️  {categoria.upper()}:")
-                for termo in termos[:5]:  # Mostrar apenas top 5 de cada categoria
-                    print(f"   • {termo}")
+        print("✅ Conexão estabelecida com sucesso!")
+        print("\n📊 Recebendo análise em tempo real:\n")
         
-        print(f"\n📈 ESTATÍSTICAS:")
-        print(f"   - Total de palavras únicas: {resultado.get('total_palavras_unicas', 0)}")
-        print(f"   - Modelo usado: {resultado.get('modelo_usado', 'Não informado')}")
+        # Processar o stream
+        for line in response.iter_lines():
+            if line:
+                line_str = line.decode('utf-8')
+                if line_str.startswith('data: '):
+                    try:
+                        data = json.loads(line_str[6:])
+                        
+                        if data.get('status'):
+                            print(f"📌 Status: {data['status']}")
+                            if data.get('message'):
+                                print(f"   Mensagem: {data['message']}")
+                            if data.get('progress'):
+                                print(f"   Progresso: {data['progress']}%")
+                        
+                        if data.get('keywords'):
+                            print("\n🎯 Palavras-chave encontradas:")
+                            print(json.dumps(data['keywords'], indent=2, ensure_ascii=False))
+                        
+                        if data.get('error'):
+                            print(f"\n❌ Erro: {data['error']}")
+                            
+                    except json.JSONDecodeError as e:
+                        print(f"⚠️ Erro ao decodificar JSON: {e}")
+                        print(f"   Linha: {line_str}")
         
-        # Salvar resultado completo
-        with open('test_analyze_result.json', 'w', encoding='utf-8') as f:
-            json.dump(resultado, f, ensure_ascii=False, indent=2)
-        print("\n💾 Resultado completo salvo em: test_analyze_result.json")
+        print("\n✅ Análise concluída!")
         
+    except requests.exceptions.ConnectionError:
+        print("❌ Erro: Não foi possível conectar ao servidor.")
+        print("   Verifique se o backend está rodando em http://localhost:8000")
     except Exception as e:
-        print(f"\n❌ ERRO NA ANÁLISE: {type(e).__name__}: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Erro inesperado: {type(e).__name__}: {e}")
 
 if __name__ == "__main__":
-    asyncio.run(testar_analise())
+    print("🚀 Teste do Agent1 - Análise de Palavras-chave")
+    print("=" * 50)
+    test_analyze_keywords()

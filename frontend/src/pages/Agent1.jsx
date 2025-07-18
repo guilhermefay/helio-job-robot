@@ -1652,6 +1652,11 @@ const Agent1 = () => {
       return
     }
 
+    if (!searchConfig || !searchConfig.cargo) {
+      setError('Configuração de busca não encontrada. Por favor, refaça a busca.')
+      return
+    }
+
     setIsAnalyzing(true)
     setError(null)
     setCurrentStep(5)
@@ -1671,7 +1676,7 @@ const Agent1 = () => {
         body: JSON.stringify({
           vagas: collectionData.vagas,
           cargo_objetivo: searchConfig.cargo.trim(),
-          area_interesse: searchConfig.area?.trim() || ''
+          area_interesse: searchConfig.cargo?.trim() || ''
         }),
         signal: controller.signal
       })

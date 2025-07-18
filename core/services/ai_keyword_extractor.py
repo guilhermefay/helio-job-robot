@@ -413,6 +413,10 @@ RETORNE APENAS O JSON, SEM TEXTO ADICIONAL OU MARKDOWN!"""
     
     def _processar_resultado_ia(self, resultado: Dict[str, Any], modelo: str) -> Dict[str, Any]:
         """Processa e valida resultado da IA"""
+        # Garantir que analise_metadados existe
+        if 'analise_metadados' not in resultado:
+            resultado['analise_metadados'] = {}
+        
         # Adicionar metadados
         resultado['analise_metadados']['modelo_ia_usado'] = modelo
         
