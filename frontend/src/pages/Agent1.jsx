@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import config from '../config'
+import { useSearchConfig } from '../hooks/useSearchConfig'
+import DebugPanel from '../components/DebugPanel'
+import { MOCK_COLLECTION_DATA, MOCK_SEARCH_CONFIG } from '../utils/mockData'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -1188,9 +1191,7 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
       
       try {
         const requestData = {
-          area_interesse: searchConfig?.cargo?.trim() || '', // Usar cargo como área também
-          cargo_objetivo: searchConfig?.cargo?.trim() || '',
-          localizacao: searchConfig?.localizacao?.trim() || '',
+          ...getApiData(),
           total_vagas_desejadas: searchConfig.quantidade,
           segmentos_alvo: searchConfig.segmentos?.trim() ? searchConfig?.segmentos?.trim().split(',').map(s => s.trim()) : [],
           tipo_vaga: searchConfig.tipoVaga || 'todos',
@@ -1395,20 +1396,8 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
 
 // Main Component
 const Agent1 = () => {
-  const [searchConfig, setSearchConfig] = useState({
-    cargo: '',
-    localizacao: '',
-    quantidade: 100,
-    segmentos: '',
-    tipoVaga: 'todos',
-    // Novos campos avançados
-    raio: '25',
-    nivel: 'todos',
-    tipoContrato: 'todos',
-    diasPublicacao: 'todos',
-    ordenar: 'date',
-    modalidade: 'todos'
-  })
+  // Hook personalizado para searchConfig seguro
+  const { searchConfig, setSearchConfig, getSafeValue, isValid, getApiData } = useSearchConfig()
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [results, setResults] = useState(null)
@@ -1466,7 +1455,7 @@ const Agent1 = () => {
       transparencia: {
         fontes_utilizadas: ['Indeed'],
         metodo_coleta: 'Streaming em tempo real',
-        filtros_aplicados: `Cargo: ${searchConfig?.cargo?.trim() || ''}, Localização: ${searchConfig?.localizacao?.trim() || ''}`,
+        filtros_aplicados: `Cargo: ${getSafeValue('cargo')}, Localização: ${getSafeValue('localizacao')}`,
         observacoes: 'Coleta realizada via streaming'
       },
       vagas: vagas
@@ -1490,10 +1479,10 @@ const Agent1 = () => {
     console.log('🚀 INICIANDO COLETA DE VAGAS - LOGS DETALHADOS - v1.0.1')
     console.log('📋 Validando campos obrigatórios...')
     
-    if (!searchConfig?.cargo?.trim() || !searchConfig?.localizacao?.trim()) {
+    if (!isValid()) {
       console.error('❌ ERRO: Campos obrigatórios não preenchidos')
-      console.log('Cargo:', searchConfig?.cargo?.trim() || '') 
-      console.log('Localização:', searchConfig?.localizacao?.trim() || '')
+      console.log('Cargo:', getSafeValue('cargo')) 
+      console.log('Localização:', getSafeValue('localizacao'))
       setError('Por favor, preencha todos os campos obrigatórios.')
       return
     }
@@ -1647,13 +1636,17 @@ const Agent1 = () => {
   }
 
   const handleAnalyzeKeywords = async () => {
+    console.log('🔍 INICIANDO ANÁLISE - Debug completo')
+    console.log('SearchConfig:', searchConfig)
+    console.log('CollectionData:', collectionData)
+    
     if (!collectionData || !collectionData.vagas) {
       setError('Nenhuma vaga disponível para análise')
       return
     }
 
-    if (!searchConfig || !searchConfig.cargo) {
-      setError('Configuração de busca não encontrada. Por favor, refaça a busca.')
+    if (!isValid()) {
+      setError('Configuração inválida. Cargo e localização são obrigatórios.')
       return
     }
 
@@ -1675,8 +1668,7 @@ const Agent1 = () => {
         },
         body: JSON.stringify({
           vagas: collectionData.vagas,
-          cargo_objetivo: searchConfig?.cargo?.trim() || '',
-          area_interesse: searchConfig?.cargo?.trim() || ''
+          ...getApiData() // Usar dados seguros da API
         }),
         signal: controller.signal
       })
@@ -1766,10 +1758,21 @@ const Agent1 = () => {
     }
   }
 
+  // Funções para Debug Panel
+  const handleLoadMockData = (mockCollectionData, mockSearchConfig) => {
+    setCollectionData(mockCollectionData)
+    setSearchConfig(mockSearchConfig)
+    setCurrentStep(4) // Ir para etapa de análise
+    console.log('📦 Mock data carregado:', { mockCollectionData, mockSearchConfig })
+  }
+
+  const handleTestAnalysis = () => {
+    console.log('🧪 Teste de análise iniciado')
+    handleAnalyzeKeywords()
+  }
+
   const canStartCollection = (
-    searchConfig?.cargo?.trim() && 
-    searchConfig?.localizacao?.trim() && 
-    !isProcessing
+    isValid() && !isProcessing
   )
 
   return (
@@ -1951,6 +1954,17 @@ const Agent1 = () => {
           </div>
         </div>
       </main>
+
+      {/* Painel de Debug - apenas em desenvolvimento */}
+      {process.env.NODE_ENV === 'development' && (
+        <DebugPanel
+          onLoadMockData={handleLoadMockData}
+          onTestAnalysis={handleTestAnalysis}
+          searchConfig={searchConfig}
+          collectionData={collectionData}
+          isAnalyzing={isAnalyzing}
+        />
+      )}
     </div>
   )
 }

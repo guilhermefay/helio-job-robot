@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Analyze Error</title>
+</head>
+<body>
+    <h1>Teste do Erro de Análise</h1>
+    <p>Este teste simula o erro de trim() em undefined</p>
+    
+    <script>
+        // Simular o cenário do erro
+        console.log("=== TESTE DO ERRO ===");
+        
+        // Cenário 1: searchConfig undefined
+        try {
+            const searchConfig = undefined;
+            const cargo = searchConfig.cargo.trim(); // Erro!
+            console.log("❌ Cenário 1 deveria ter falhado!");
+        } catch (e) {
+            console.log("✅ Cenário 1 - Erro capturado:", e.message);
+        }
+        
+        // Cenário 2: searchConfig existe mas cargo undefined
+        try {
+            const searchConfig = { localizacao: "SP" };
+            const cargo = searchConfig.cargo.trim(); // Erro!
+            console.log("❌ Cenário 2 deveria ter falhado!");
+        } catch (e) {
+            console.log("✅ Cenário 2 - Erro capturado:", e.message);
+        }
+        
+        // Cenário 3: Com optional chaining (correção)
+        try {
+            const searchConfig = undefined;
+            const cargo = searchConfig?.cargo?.trim() || '';
+            console.log("✅ Cenário 3 - Com optional chaining:", cargo);
+        } catch (e) {
+            console.log("❌ Cenário 3 falhou:", e.message);
+        }
+        
+        // Cenário 4: searchConfig parcial com optional chaining
+        try {
+            const searchConfig = { localizacao: "SP" };
+            const cargo = searchConfig?.cargo?.trim() || 'valor padrão';
+            console.log("✅ Cenário 4 - Valor padrão usado:", cargo);
+        } catch (e) {
+            console.log("❌ Cenário 4 falhou:", e.message);
+        }
+        
+        // Cenário 5: Tudo correto
+        try {
+            const searchConfig = { cargo: "  Desenvolvedor  " };
+            const cargo = searchConfig?.cargo?.trim() || '';
+            console.log("✅ Cenário 5 - Valor trimado:", '"' + cargo + '"');
+        } catch (e) {
+            console.log("❌ Cenário 5 falhou:", e.message);
+        }
+    </script>
+</body>
+</html>
