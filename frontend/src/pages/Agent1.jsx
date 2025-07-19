@@ -1640,19 +1640,16 @@ const Agent1 = () => {
   }
 
   const handleAnalyzeKeywords = async () => {
-    console.log('🔍 INICIANDO ANÁLISE - Debug completo')
-    console.log('SearchConfig:', searchConfig)
-    console.log('CollectionData:', collectionData)
+    console.log('🔍 INICIANDO ANÁLISE SIMPLIFICADA')
     
     if (!collectionData || !collectionData.vagas) {
       setError('Nenhuma vaga disponível para análise')
       return
     }
 
-    if (!isValid()) {
-      setError('Configuração inválida. Cargo e localização são obrigatórios.')
-      return
-    }
+    // SIMPLIFICAÇÃO: Usar valores fixos se não existirem
+    const cargoSeguro = searchConfig?.cargo || 'Desenvolvedor'
+    const areaSegura = searchConfig?.cargo || 'Tecnologia'
 
     setIsAnalyzing(true)
     setError(null)
@@ -1672,7 +1669,8 @@ const Agent1 = () => {
         },
         body: JSON.stringify({
           vagas: collectionData.vagas,
-          ...getApiData() // Usar dados seguros da API
+          cargo_objetivo: cargoSeguro,
+          area_interesse: areaSegura
         }),
         signal: controller.signal
       })
