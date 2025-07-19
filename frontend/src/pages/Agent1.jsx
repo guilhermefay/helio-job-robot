@@ -4,6 +4,7 @@ import config from '../config'
 import { useSearchConfig } from '../hooks/useSearchConfig'
 import DebugPanel from '../components/DebugPanel'
 import { MOCK_COLLECTION_DATA, MOCK_SEARCH_CONFIG } from '../utils/mockData'
+import { useEmergencyPatch, ensureSearchConfig } from './Agent1Emergency'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
@@ -1396,6 +1397,9 @@ const StreamingJobCollection = ({ isVisible, onClose, onJobsCollected, searchCon
 
 // Main Component
 const Agent1 = () => {
+  // PATCH DE EMERGÊNCIA - Ativar proteção global
+  useEmergencyPatch()
+  
   // Hook personalizado para searchConfig seguro
   const { searchConfig, setSearchConfig, getSafeValue, isValid, getApiData } = useSearchConfig()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -1864,7 +1868,7 @@ const Agent1 = () => {
             collectionData={collectionData}
             onAnalyze={handleAnalyzeKeywords}
             isAnalyzing={isAnalyzing}
-            config={searchConfig}
+            config={ensureSearchConfig(searchConfig)}
             analysisStatus={analysisStatus}
             analysisMessage={analysisMessage}
             analysisProgress={analysisProgress}
